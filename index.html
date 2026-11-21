@@ -237,7 +237,7 @@ animal(id){
     ...(v?[{f:v.fecha,c:'ve',t:v.tipo,s:v.tipo==='Venta'?col(v.precio)+(v.peso?' · '+v.peso+' kg en subasta':''):esc(v.quien)}]:[])].sort((x,y)=>y.f.localeCompare(x.f));
   return `<div class="file"><div><div class="fphoto">${foto(a)}<label class="ib" for="ft">${a.foto?'Cambiar foto':'Agregar foto'}</label><input id="ft" class="hidden" type="file" accept="image/*" data-foto="${id}"></div></div>
   <div><h1>Arete ${esc(a.arete)}</h1><p class="note">${esc(h.nombre)} · ${esc(finca(h.finca).nombre)} · ${chipE(a)}</p>
-  ${a.estado==='activo'?`<div class="acts"><button class="btn b-ocr" data-act="aplic1:${id}">Aplicación</button><button class="btn b-gr" data-act="tras:${id}">Trasladar</button><button class="btn b-ter" data-act="venta:${id}">Venta o salida</button><button class="btn ghost" data-act="valor:${id}">Valor estimado</button></div>`:''}<div class="acts" style="margin-top:0"><button class="btn ghost" data-act="editar:${id}">Editar datos</button></div>
+  ${a.estado==='activo'?`<div class="acts"><button class="btn b-ocr" data-act="aplic1:${id}">Aplicación</button><button class="btn b-gr" data-act="tras:${id}">Trasladar</button><button class="btn b-ter" data-act="venta:${id}">Venta o muerte</button><button class="btn ghost" data-act="valor:${id}">Valor estimado</button></div>`:''}<div class="acts" style="margin-top:0"><button class="btn ghost" data-act="editar:${id}">Editar datos</button></div>
   <dl class="dl"><dt>Color o señas</dt><dd>${esc(a.senas||'—')}</dd><dt>Entrada</dt><dd>${fec(a.entrada)}</dd><dt>Costo de compra</dt><dd class="money">${col(a.costo)}</dd><dt>Peso estimado</dt><dd>${a.peso?a.peso+' kg':'—'}</dd><dt>Sanidad</dt><dd class="money">${col(san)}</dd><dt>Valor estimado</dt><dd class="money">${a.valor?col(a.valor):'—'}</dd><dt>Sexo · raza</dt><dd>${esc(a.sexo||'—')} · ${esc(a.raza||'—')}</dd><dt>Comprado a</dt><dd>${esc(a.proveedor||'—')}</dd></dl>
   <h2>Historial</h2><ul class="tl">${hist.map(x=>`<li class="${x.c}"><div class="d">${fec(x.f)}</div><div>${esc(x.t)}</div><div class="d">${x.s}</div></li>`).join('')}</ul></div></div>`;
 },
@@ -255,7 +255,7 @@ mas(){
   ${D.fincas.map(f=>{const hs=hatosDe(f.id);return hs.length?`<h2 style="font-size:19px;margin:16px 0 8px">${esc(f.nombre)}</h2><div class="list">${hs.map(h=>`<button class="row" data-act="xls:${h.id}"><div class="g"><div class="big" style="font-size:20px">${esc(h.nombre)}</div><div class="sm">${h.estado==='cerrado'?'Cerrado el '+fec(h.cierre):'Abierto'} · ${animalesDe(h.id).length} animales</div></div><span class="chip v">Excel</span></button>`).join('')}</div>`:''}).join('')||'<div class="empty">Todavía no hay hatos</div>'}</div>
   <div class="card"><h2 style="margin-top:0">Respaldar</h2><p class="note">Crea un archivo con todo, fotos incluidas. Guardalo en tu Drive más o menos una vez al mes. Último respaldo: <b>${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}</b>.</p><button class="btn b-ocr" data-act="respaldar">Respaldar ahora</button></div>
   <div class="card"><h2 style="margin-top:0">Recuperar un respaldo</h2><p class="note">Carga un archivo de respaldo en este aparato. Sirve si cambiás de teléfono o para ver todo en la computadora. <b>Reemplaza</b> lo que haya en este aparato.</p><label class="btn ghost" style="display:inline-flex;align-items:center;cursor:pointer" for="rec">Escoger archivo de respaldo</label><input id="rec" class="hidden" type="file" accept=".json,.txt,application/json,text/plain"></div>
-  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este aparato, apenas tocás Guardar. No se suben a internet. ${persistente?'Este aparato los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 5.1</p></div></div>`;
+  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este aparato, apenas tocás Guardar. No se suben a internet. ${persistente?'Este aparato los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 5.2</p></div></div>`;
 }};
 const titles={inicio:'Inicio',fincas:'Fincas',finca:'Finca',hato:'Hato',animal:'Animal',mas:'Exportar',hist:'Histórico'};
 
@@ -350,10 +350,10 @@ function fGasto(hid){
 }
 function fVenta(aid){
   const act=D.animales.filter(a=>a.estado==='activo');if(!act.length)return alertSheet('No hay animales activos.');
-  sheet('Venta o salida',`${aid?`<input type="hidden" name="animal" value="${aid}"><p class="note">Arete ${esc(animal(aid).arete)}</p>`:sel('Arete','animal',act.map(a=>[a.id,a.arete+' · '+hato(a.hato).nombre]),act[0].id)}
+  sheet('Venta o muerte',`${aid?`<input type="hidden" name="animal" value="${aid}"><p class="note">Arete ${esc(animal(aid).arete)}</p>`:sel('Arete','animal',act.map(a=>[a.id,a.arete+' · '+hato(a.hato).nombre]),act[0].id)}
   <div class="two">${sel('Tipo','tipo',[['Venta','Venta'],['Muerte','Muerte']],'Venta')}${fld('Fecha','fecha','date',today())}</div>
   <div class="two">${fld('Precio (₡)','precio','text','',mon)}${fld('Peso en subasta (kg)','peso','text','',num)}</div>
-  <div class="two">${fld('Rebajo de subasta (₡)','rebajo','text','',mon)}${fld('Subasta, comprador o causa','quien')}</div>`,o=>{
+  <div class="two">${fld('Rebajo de subasta (₡)','rebajo','text','',mon)}${fld('Subasta, comprador o causa de muerte','quien')}</div>`,o=>{
     if(o.tipo==='Venta'&&!n(o.precio))return 'Falta el precio';
     D.ventas.push({id:uid(),animal:o.animal,tipo:o.tipo,fecha:o.fecha,precio:n(o.precio),peso:n(o.peso),rebajo:n(o.rebajo),quien:o.quien});
     animal(o.animal).estado=o.tipo==='Venta'?'vendido':'muerto';
