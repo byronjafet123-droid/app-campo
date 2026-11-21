@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ganadería</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a0a09">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@600;700;800&family=Barlow+Semi+Condensed:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday field tool, plain and sturdy
+   IDEA a weatherproof field notebook: one card per animal, big numbers readable in the sun
+   PICTURE the herd itself: animal cards with photo and large ear-tag number
+   COLOUR black ground, dark grey cards, bold white text; muted olive, terracotta, ochre accents; "Modo sol" flips to white/black
+   TYPE Barlow Semi Condensed 800 for numbers and titles + Barlow 700 for text
+   LAYOUT phone: top bar, content, bottom tab bar. Desktop: left side menu, wider grids, two-column animal file */
+:root{color-scheme:dark;--bg:#0a0a09;--card:#1b1b19;--card2:#262623;--line:#3a3a36;--ink:#fff;--soft:#d6d3ca;--oli:#5f6e34;--ter:#9a4e35;--ocr:#a07c35;--ok:#a9bf6a;--bad:#e08a6c;--btxt:#fff}
+:root.sol{color-scheme:light;--bg:#fff;--card:#f0efea;--card2:#e2e0d8;--line:#bdbab0;--ink:#000;--soft:#2a2a27;--oli:#4c5a25;--ter:#8a3f27;--ocr:#7d5e1f;--ok:#3d5a12;--bad:#9a2f12;--btxt:#fff}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:700 17px/1.45 Barlow,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+h1,h2,h3,.num{font-family:"Barlow Semi Condensed",Barlow,sans-serif;font-weight:800;letter-spacing:-.01em;margin:0}
+h1{font-size:clamp(28px,6vw,38px);line-height:1.05}
+h2{font-size:22px;line-height:1.1;margin:26px 0 10px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.app{min-height:100%;display:grid;grid-template-rows:auto 1fr auto}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--bg);border-bottom:2px solid var(--line)}
+.top .t{flex:1;font:800 20px/1.1 "Barlow Semi Condensed",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{min-height:44px;min-width:44px;padding:0 12px;border:2px solid var(--line);background:var(--card);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:800}
+.ib svg{width:22px;height:22px}
+main{padding:16px 16px 110px;width:100%;max-width:1180px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border-top:2px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0)}
+nav button{min-height:62px;border:0;background:none;font-weight:800;font-size:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--soft)}
+nav button svg{width:24px;height:24px}
+nav button.on{color:var(--ink);box-shadow:inset 0 4px 0 var(--ocr)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px}
+.list{display:grid;gap:10px}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px;min-height:64px}
+.row .g{flex:1}
+.row .big{font:800 22px/1.1 "Barlow Semi Condensed",sans-serif}
+.row .sm{color:var(--soft);font-size:15px}
+.chev{width:22px;height:22px;flex:none;color:var(--soft)}
+.add{width:100%;min-height:60px;border:2px dashed var(--soft);background:none;border-radius:14px;font-weight:800;font-size:18px}
+.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
+.quick button{min-height:88px;border:0;border-radius:14px;color:var(--btxt);font:800 21px/1.1 "Barlow Semi Condensed",sans-serif;text-align:left;padding:14px;display:flex;flex-direction:column;justify-content:space-between}
+.quick svg{width:28px;height:28px}
+.b-oli{background:var(--oli)}.b-ter{background:var(--ter)}.b-ocr{background:var(--ocr)}.b-gr{background:#3b3b37}
+:root.sol .b-gr{background:#3b3b37}
+.search{width:100%;min-height:58px;border:2px solid var(--line);background:var(--card);border-radius:14px;padding:0 16px;font-size:20px;font-weight:800}
+.search:focus,input:focus,select:focus,textarea:focus{outline:3px solid var(--ocr);outline-offset:1px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:10px}
+.stat{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat .l{color:var(--soft);font-size:15px}
+.stat .v{font:800 clamp(24px,6vw,30px)/1.1 "Barlow Semi Condensed",sans-serif;white-space:nowrap}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.herd{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.an{background:var(--card);border:2px solid var(--line);border-radius:14px;overflow:hidden;text-align:left;padding:0}
+.an .ph{aspect-ratio:4/3;background:var(--card2);display:block;width:100%}
+.an .ph img,.an .ph svg{width:100%;height:100%;object-fit:cover;display:block}
+.an .tx{padding:8px 10px 10px}
+.an .ar{font:800 26px/1 "Barlow Semi Condensed",sans-serif}
+.chip{display:inline-block;font-size:14px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--card2);color:var(--soft)}
+.chip.v{background:var(--ocr);color:#fff}.chip.m{background:var(--ter);color:#fff}.chip.c{background:var(--line);color:var(--ink)}
+.desg dt.tot,.desg dd.tot{font-size:19px;color:var(--ink);border-bottom-width:3px}
+.desg dd.tot{font-size:23px}
+.desg{max-width:640px}
+.desg dt:last-of-type,.desg dd:last-of-type{border-bottom:0}
+.quick svg{width:32px;height:32px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.btn{min-height:50px;padding:0 16px;border:0;border-radius:12px;color:var(--btxt);font-weight:800;font-size:17px}
+.btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--line)}
+.file{display:grid;gap:16px}
+.fphoto{border-radius:14px;overflow:hidden;background:var(--card2);aspect-ratio:4/3;position:relative}
+.fphoto img,.fphoto svg{width:100%;height:100%;object-fit:cover;display:block}
+.fphoto label{position:absolute;right:10px;bottom:10px}
+.dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0;margin:0}
+.dl dt,.dl dd{padding:10px 0;border-bottom:2px solid var(--line);margin:0}
+.dl dt{color:var(--soft);padding-right:16px}
+.dl dd{text-align:right;font:800 19px/1.3 "Barlow Semi Condensed",sans-serif}
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tl li{background:var(--card);border:2px solid var(--line);border-left:6px solid var(--ocr);border-radius:10px;padding:10px 12px}
+.tl li.ap{border-left-color:var(--oli)}.tl li.ve{border-left-color:var(--ter)}
+.tl .d{color:var(--soft);font-size:15px}
+.money{white-space:nowrap}
+.note{color:var(--soft);font-size:15px;margin:10px 0}
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center}
+.sheet form{background:var(--bg);border:2px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;width:100%;max-width:560px;max-height:92%;overflow:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0))}
+.sheet h3{font-size:24px;margin-bottom:12px}
+.f{display:grid;gap:4px;margin-bottom:12px}
+.f label{color:var(--soft);font-size:15px}
+.f input,.f select,.f textarea{min-height:50px;border:2px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;font-size:18px;font-weight:800;width:100%}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(5.5em,1fr));gap:8px;margin-bottom:12px}
+.checks label{display:flex;align-items:center;gap:6px;min-height:46px;padding:0 10px;border:2px solid var(--line);border-radius:10px;background:var(--card);font-weight:800}
+.checks input{width:20px;height:20px}
+.err{color:var(--bad);min-height:1.4em}
+.sheet .end{display:flex;gap:10px;position:sticky;bottom:-18px;background:var(--bg);padding-top:8px}
+.sheet .end .btn{flex:1}
+.empty{padding:18px;text-align:center;color:var(--soft);border:2px dashed var(--line);border-radius:14px}
+.res a,.res button{text-decoration:none}
+.hidden{display:none}
+@media(min-width:600px){.herd{grid-template-columns:repeat(3,minmax(0,1fr))}.quick{grid-template-columns:repeat(4,minmax(0,1fr))}.sheet{align-items:center}.sheet form{border-radius:18px;border-bottom:2px solid var(--line)}}
+@media(min-width:900px){
+.app{grid-template-columns:230px minmax(0,1fr);grid-template-rows:auto 1fr}
+.top{grid-column:2}
+nav{position:sticky;top:0;grid-row:1/3;grid-column:1;height:100vh;display:flex;flex-direction:column;border-top:0;border-right:2px solid var(--line);padding:16px 10px;gap:6px}
+nav::before{content:"GANADERÍA";font:800 22px/1 "Barlow Semi Condensed",sans-serif;color:var(--ink);padding:6px 12px 18px}
+nav button{flex-direction:row;justify-content:flex-start;padding:0 12px;border-radius:10px;min-height:52px;font-size:18px;gap:10px}
+nav button.on{box-shadow:none;background:var(--card2)}
+main{grid-column:2;padding:22px 28px 40px}
+.herd{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.file{grid-template-columns:minmax(0,5fr) minmax(0,6fr);align-items:start}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="ib hidden" id="back" aria-label="Atrás"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="t" id="ttl">Inicio</div>
+    <button class="ib" id="sol" aria-label="Modo sol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg><span>Modo sol</span></button>
+  </header>
+  <main id="main"></main>
+  <nav id="nav">
+    <button data-tab="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 11l9-7 9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>Inicio</button>
+    <button data-tab="fincas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 20h20M4 20V10l8-5 8 5v10"/><path d="M9 20v-5h6v5"/></svg>Fincas</button>
+    <button data-tab="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Histórico</button>
+    <button data-tab="mas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>Exportar</button>
+  </nav>
+</div>
+<div id="sheet"></div>
+<script>
+{
+const KEY='ganaderia-modelo-v1';
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const col=n=>'₡'+Math.round(n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const fec=s=>{if(!s)return '';const[y,m,d]=s.split('-');return d+'/'+m+'/'+y};
+const chev='<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M9 5l7 7-7 7"/></svg>';
+const calf=`<svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice"><rect width="160" height="120" fill="var(--card2)"/><g fill="var(--line)"><ellipse cx="78" cy="64" rx="40" ry="22"/><rect x="48" y="76" width="9" height="30" rx="3"/><rect x="62" y="78" width="9" height="28" rx="3"/><rect x="90" y="78" width="9" height="28" rx="3"/><rect x="104" y="76" width="9" height="30" rx="3"/><path d="M112 50l20-6c8 0 12 6 12 14l-2 12c-1 4-6 6-10 4l-18-8z"/><path d="M128 44l8-10 4 3-6 10z"/><path d="M38 60c-8 2-12 10-10 20l4-1c-1-7 1-13 7-15z"/></g></svg>`;
+
+const vacio=()=>({fincas:[{id:'f1',nombre:'Finca 1'},{id:'f2',nombre:'Finca 2'}],hatos:[],animales:[],aplicaciones:[],gastos:[],traslados:[],ventas:[],sol:false,respaldo:''});
+const idb=new Promise((res,rej)=>{const r=indexedDB.open('ganaderia',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const idbGet=k=>idb.then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
+const idbSet=(k,v)=>idb.then(db=>new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)}));
+let D=null,saving=Promise.resolve(),persistente=false;
+const save=()=>{saving=saving.then(()=>idbSet('datos',D)).catch(()=>alertSheet('No se pudo guardar el último cambio. Revisá que el teléfono tenga espacio libre y volvé a intentarlo.'))};
+
+const finca=id=>D.fincas.find(x=>x.id===id);
+const hato=id=>D.hatos.find(x=>x.id===id);
+const animal=id=>D.animales.find(x=>x.id===id);
+const hatosDe=f=>D.hatos.filter(h=>h.finca===f);
+const animalesDe=h=>D.animales.filter(a=>a.hato===h);
+const venta=aid=>D.ventas.find(v=>v.animal===aid);
+const sanidadDe=aid=>D.aplicaciones.filter(p=>p.animales.includes(aid)).reduce((s,p)=>s+p.costo/p.animales.length,0);
+function cuentas(hid){
+  const an=animalesDe(hid);
+  const compra=an.reduce((s,a)=>s+(+a.costo||0),0);
+  const san=an.reduce((s,a)=>s+sanidadDe(a.id),0);
+  const gs=D.gastos.filter(g=>g.hato===hid);
+  const por=t=>gs.filter(g=>g.tipo===t).reduce((s,g)=>s+(+g.monto||0),0);
+  const ali=por('Alimentación'),tra=por('Transporte'),gas=gs.reduce((s,g)=>s+(+g.monto||0),0),otr=gas-ali-tra;
+  const ven=an.reduce((s,a)=>{const v=venta(a.id);return s+(v&&v.tipo==='Venta'?(+v.precio||0)-(+v.rebajo||0):0)},0);
+  return{an,activos:an.filter(a=>a.estado==='activo').length,compra,san,ali,tra,otr,gas,ven,inv:compra+san+gas,res:ven-compra-san-gas};
+}
+function sumar(list){const z={an:[],activos:0,compra:0,san:0,ali:0,tra:0,otr:0,gas:0,ven:0,inv:0,res:0};list.forEach(c=>{for(const k in z)k==='an'?z.an.push(...c.an):z[k]+=c[k]});return z}
+const signo=v=>`<span class="money ${v>=0?'pos':'neg'}">${v<0?'−':''}${col(Math.abs(v))}</span>`;
+function desglose(c,cerrado){
+  return `<dl class="dl card desg"><dt>Compra de animales</dt><dd class="money">${col(c.compra)}</dd><dt>Sanidad</dt><dd class="money">${col(c.san)}</dd><dt>Alimentación</dt><dd class="money">${col(c.ali)}</dd><dt>Transporte</dt><dd class="money">${col(c.tra)}</dd><dt>Otros</dt><dd class="money">${col(c.otr)}</dd>
+  <dt class="tot">Total gastado</dt><dd class="tot money">${col(c.inv)}</dd><dt>Vendido</dt><dd class="money">${col(c.ven)}</dd><dt class="tot">${cerrado?'Ganancia':'Resultado hasta hoy'}</dt><dd class="tot">${signo(c.res)}</dd></dl>`;
+}
+const foto=a=>a.foto?`<img src="${a.foto}" alt="Foto del animal ${esc(a.arete)}">`:calf;
+const chipE=a=>a.estado==='vendido'?'<span class="chip v">Vendido</span>':a.estado==='muerto'?'<span class="chip m">Muerto</span>':'<span class="chip">Activo</span>';
+
+let cur={v:'inicio',p:null},stack=[],q='';
+const go=(v,p)=>{stack.push(cur);cur={v,p};render();scrollTo(0,0)};
+const tab=v=>{stack=[];cur={v,p:null};render();scrollTo(0,0)};
+
+const resHTML=()=>{if(!q)return '';const res=D.animales.filter(a=>a.arete.includes(q));return res.length?res.map(a=>`<button class="row" data-go="animal:${a.id}"><div class="g"><div class="big">Arete ${esc(a.arete)}</div><div class="sm">${esc(hato(a.hato)?.nombre)} · ${esc(finca(hato(a.hato)?.finca)?.nombre)}</div></div>${chipE(a)}${chev}</button>`).join(''):'<div class="empty">No hay ningún animal con ese arete</div>'};
+const V={
+inicio(){
+  const act=D.animales.filter(a=>a.estado==='activo').length;
+  const ab=D.hatos.filter(h=>h.estado==='abierto').length;
+  const inv=D.hatos.filter(h=>h.estado==='abierto').reduce((s,h)=>s+cuentas(h.id).inv,0);
+  const ult=[...D.aplicaciones.map(p=>({f:p.fecha,t:p.producto+' · '+p.animales.length+' animal'+(p.animales.length>1?'es':''),m:p.costo,c:'ap'})),...D.gastos.map(g=>({f:g.fecha,t:g.tipo+' · '+(hato(g.hato)?.nombre||''),m:g.monto,c:''})),...D.ventas.map(v=>({f:v.fecha,t:v.tipo+' · arete '+(animal(v.animal)?.arete||''),m:v.precio,c:'ve'}))].sort((a,b)=>b.f.localeCompare(a.f)).slice(0,5);
+  return `<input class="search" id="q" type="search" inputmode="numeric" placeholder="Buscar arete…" value="${esc(q)}" aria-label="Buscar arete">
+  <div class="list res" id="res" style="margin-top:10px">${resHTML()}</div>
+  <div class="quick">
+    <button class="b-oli" data-act="animal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Nuevo animal</button>
+    <button class="b-ocr" data-act="aplic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><g transform="rotate(-45 12 12)"><rect x="7" y="8.5" width="10" height="7" rx="1"/><path d="M17 12h3.5M20.5 9v6M7 12H1.5M10 8.5v3M13 8.5v3"/></g></svg>Aplicación</button>
+    <button class="b-gr" data-act="gasto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="3"/></svg>Gasto</button>
+    <button class="b-ter" data-act="venta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12l9-9h9v9l-9 9z"/><circle cx="16" cy="8" r="1.5"/></svg>Venta</button>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="l">Animales activos</div><div class="v num">${act}</div></div>
+    <div class="stat"><div class="l">Hatos abiertos</div><div class="v num">${ab}</div></div>
+    <div class="stat"><div class="l">Invertido en hatos abiertos</div><div class="v num money">${col(inv)}</div></div>
+  </div>
+  ${D.hatos.length?'':'<div class="card" style="margin-top:14px"><h2 style="margin-top:0">Para empezar</h2><p>Entrá a <b>Fincas</b>, escogé una finca y creá tu primer hato. Después ya podés agregar animales.</p><button class="btn b-oli" data-tab="fincas">Ir a Fincas</button></div>'}
+  <h2>Últimos registros</h2>
+  ${ult.length?'':'<div class="empty">Todavía no hay registros</div>'}<ul class="tl">${ult.map(u=>`<li class="${u.c}"><div class="d">${fec(u.f)}</div><div style="display:flex;justify-content:space-between;gap:10px"><span>${esc(u.t)}</span><span class="money num">${col(u.m)}</span></div></li>`).join('')}</ul>
+  <p class="note">Último respaldo: ${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}</p>`;
+},
+fincas(){
+  return `<h1>Fincas</h1><p class="note">Tocá una finca para ver sus hatos.</p><div class="list">${D.fincas.map(f=>{const hs=hatosDe(f.id);const n=hs.reduce((s,h)=>s+cuentas(h.id).activos,0);return `<button class="row" data-go="finca:${f.id}"><div class="g"><div class="big">${esc(f.nombre)}</div><div class="sm">${hs.length} hato${hs.length===1?'':'s'} · ${n} animal${n===1?'':'es'} activo${n===1?'':'s'}</div></div>${chev}</button>`}).join('')}
+  <button class="add" data-act="addFinca">+ Agregar finca</button></div>`;
+},
+finca(id){
+  const f=finca(id);const hs=hatosDe(id);
+  return `<h1>${esc(f.nombre)}</h1><div class="acts"><button class="btn ghost" data-act="renFinca:${id}">Cambiar nombre</button><button class="btn ghost" data-act="delFinca:${id}" style="color:var(--bad)">Eliminar finca</button></div>
+  <h2>Hatos</h2><div class="list">${hs.map(h=>{const c=cuentas(h.id);return `<button class="row" data-go="hato:${h.id}"><div class="g"><div class="big">${esc(h.nombre)}</div><div class="sm">Desde ${fec(h.inicio)} · ${c.activos} de ${c.an.length} activos</div></div>${h.estado==='cerrado'?'<span class="chip c">Cerrado</span>':''}${chev}</button>`}).join('')||'<div class="empty">Esta finca todavía no tiene hatos</div>'}
+  <button class="add" data-act="hato:${id}">+ Nuevo hato</button></div>`;
+},
+hato(id){
+  const h=hato(id),c=cuentas(id);
+  const gs=D.gastos.filter(g=>g.hato===id).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return `<h1>${esc(h.nombre)}</h1><p class="note">${esc(finca(h.finca).nombre)} · desde ${fec(h.inicio)}${h.estado==='cerrado'?' · cerrado el '+fec(h.cierre):''}</p>
+  <p class="note"><span class="chip">${c.activos} activo${c.activos===1?'':'s'} de ${c.an.length}</span></p>
+  ${desglose(c,h.estado==='cerrado')}
+  <div class="acts">${h.estado==='abierto'?`<button class="btn b-oli" data-act="animal:${id}">+ Animal</button><button class="btn b-ocr" data-act="aplic:${id}">Aplicación al hato</button><button class="btn b-gr" data-act="gasto:${id}">Gasto</button><button class="btn ghost" data-act="cerrar:${id}">Cerrar hato</button>`:''}</div>
+  <div class="cols"><div><h2>Animales</h2>${c.an.length?`<div class="herd">${c.an.map(a=>`<button class="an" data-go="animal:${a.id}"><span class="ph">${foto(a)}</span><div class="tx"><div class="ar">${esc(a.arete)}</div>${chipE(a)}</div></button>`).join('')}</div>`:'<div class="empty">Todavía no hay animales en este hato</div>'}</div>
+  <div>  <h2>Gastos generales</h2><ul class="tl">${gs.map(g=>`<li><div class="d">${fec(g.fecha)} · ${esc(g.tipo)}</div><div style="display:flex;justify-content:space-between;gap:10px"><span>${esc(g.notas)||'&nbsp;'}</span><span class="money num">${col(g.monto)}</span></div></li>`).join('')||'<div class="empty">Sin gastos todavía</div>'}</ul></div></div>`;
+},
+animal(id){
+  const a=animal(id),h=hato(a.hato),v=venta(id),san=sanidadDe(id);
+  const hist=[{f:a.entrada,c:'',t:'Entrada al hato',s:col(a.costo)+(a.peso?' · '+a.peso+' kg estimados':'')},
+    ...D.aplicaciones.filter(p=>p.animales.includes(id)).map(p=>({f:p.fecha,c:'ap',t:p.tipo+': '+p.producto,s:(p.dosis?p.dosis+' ml · ':'')+col(p.costo/p.animales.length)})),
+    ...D.traslados.filter(t=>t.animal===id).map(t=>({f:t.fecha,c:'',t:'Traslado',s:(hato(t.de)?.nombre||'')+' → '+(hato(t.a)?.nombre||'')})),
+    ...(v?[{f:v.fecha,c:'ve',t:v.tipo,s:v.tipo==='Venta'?col(v.precio)+(v.peso?' · '+v.peso+' kg en subasta':''):esc(v.quien)}]:[])].sort((x,y)=>y.f.localeCompare(x.f));
+  return `<div class="file"><div><div class="fphoto">${foto(a)}<label class="ib" for="ft">${a.foto?'Cambiar foto':'Agregar foto'}</label><input id="ft" class="hidden" type="file" accept="image/*" data-foto="${id}"></div></div>
+  <div><h1>Arete ${esc(a.arete)}</h1><p class="note">${esc(h.nombre)} · ${esc(finca(h.finca).nombre)} · ${chipE(a)}</p>
+  ${a.estado==='activo'?`<div class="acts"><button class="btn b-ocr" data-act="aplic1:${id}">Aplicación</button><button class="btn b-gr" data-act="tras:${id}">Trasladar</button><button class="btn b-ter" data-act="venta:${id}">Venta o salida</button><button class="btn ghost" data-act="valor:${id}">Valor estimado</button></div>`:''}
+  <dl class="dl"><dt>Entrada</dt><dd>${fec(a.entrada)}</dd><dt>Costo de compra</dt><dd class="money">${col(a.costo)}</dd><dt>Peso estimado</dt><dd>${a.peso?a.peso+' kg':'—'}</dd><dt>Sanidad</dt><dd class="money">${col(san)}</dd><dt>Valor estimado</dt><dd class="money">${a.valor?col(a.valor):'—'}</dd><dt>Sexo · raza</dt><dd>${esc(a.sexo||'—')} · ${esc(a.raza||'—')}</dd><dt>Comprado a</dt><dd>${esc(a.proveedor||'—')}</dd></dl>
+  <h2>Historial</h2><ul class="tl">${hist.map(x=>`<li class="${x.c}"><div class="d">${fec(x.f)}</div><div>${esc(x.t)}</div><div class="d">${x.s}</div></li>`).join('')}</ul></div></div>`;
+},
+hist(){
+  const fs=D.fincas.map(f=>({f,hs:hatosDe(f.id).map(h=>({h,c:cuentas(h.id)}))}));
+  const tot=sumar(fs.flatMap(x=>x.hs.map(y=>y.c)));
+  return `<h1>Histórico</h1><p class="note">Todo lo de cada finca, sumando todos sus hatos, abiertos y cerrados.</p>
+  <h2>Todas las fincas</h2>${desglose(tot)}
+  ${fs.map(({f,hs})=>{const c=sumar(hs.map(y=>y.c));return `<h2>${esc(f.nombre)}</h2>${hs.length?desglose(c)+`<ul class="tl" style="margin-top:10px">${hs.map(({h,c})=>`<li><button class="row" style="border:0;padding:0;min-height:0;background:none" data-go="hato:${h.id}"><div class="g"><div>${esc(h.nombre)} ${h.estado==='cerrado'?'<span class="chip c">Cerrado</span>':''}</div><div class="d">Total gastado ${col(c.inv)} · vendido ${col(c.ven)}</div></div>${signo(c.res)}</button></li>`).join('')}</ul>`:'<div class="empty">Esta finca todavía no tiene hatos</div>'}`}).join('')}`;
+},
+mas(){
+  return `<h1>Exportar y respaldar</h1>
+  <div class="list" style="margin-top:16px">
+  <div class="card"><h2 style="margin-top:0">Exportar a Excel</h2><p class="note">Un archivo con una hoja para Fincas y hatos, Animales, Aplicaciones, Traslados, Gastos y Ventas.</p><button class="btn b-oli" disabled style="opacity:.6">Llega en un paso siguiente</button></div>
+  <div class="card"><h2 style="margin-top:0">Respaldar</h2><p class="note">Crea un archivo con todo, fotos incluidas, para guardarlo en tu Drive. Último respaldo: ${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}.</p><button class="btn b-ocr" disabled style="opacity:.6">Llega en un paso siguiente</button></div>
+  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este teléfono, apenas tocás Guardar. No se suben a internet. ${persistente?'El teléfono los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p></div></div>`;
+}};
+const titles={inicio:'Inicio',fincas:'Fincas',finca:'Finca',hato:'Hato',animal:'Animal',mas:'Exportar',hist:'Histórico'};
+
+function render(){
+  document.documentElement.classList.toggle('sol',!!D.sol);
+  document.getElementById('sol').querySelector('span').textContent=D.sol?'Modo noche':'Modo sol';
+  if(cur.p&&!({finca,hato,animal}[cur.v]?.(cur.p)))cur={v:'inicio',p:null},stack=[];
+  document.getElementById('main').innerHTML=V[cur.v](cur.p);
+  document.getElementById('ttl').textContent=cur.v==='finca'?finca(cur.p).nombre:titles[cur.v];
+  document.getElementById('back').classList.toggle('hidden',!stack.length);
+  const t={inicio:'inicio',fincas:'fincas',finca:'fincas',hato:'fincas',animal:'fincas',mas:'mas',hist:'hist'}[cur.v];
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+}
+
+/* ---------- forms ---------- */
+const box=document.getElementById('sheet');
+const opts=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${v===sel?' selected':''}>${esc(l)}</option>`).join('');
+const hatosAbiertos=()=>D.hatos.filter(h=>h.estado==='abierto').map(h=>[h.id,h.nombre+' · '+finca(h.finca).nombre]);
+const fld=(l,n,t='text',v='',x='')=>`<div class="f"><label for="i-${n}">${l}</label><input id="i-${n}" name="${n}" type="${t}" value="${esc(v)}" ${x}></div>`;
+const sel=(l,n,o,v,x='')=>`<div class="f"><label for="i-${n}">${l}</label><select id="i-${n}" name="${n}" ${x}>${opts(o,v)}</select></div>`;
+const num='inputmode="numeric" type="text"';
+const mon='inputmode="numeric" data-mon="1" autocomplete="off"';
+function sheet(title,html,onSave,label='Guardar'){
+  box.innerHTML=`<div class="sheet"><form novalidate><h3>${title}</h3>${html}<div class="err" id="err"></div><div class="end"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn b-oli">${label}</button></div></form></div>`;
+  const f=box.querySelector('form');
+  f.onsubmit=e=>{e.preventDefault();const o=Object.fromEntries(new FormData(f));o._all=new FormData(f);const er=onSave(o,f);if(er){f.querySelector('#err').textContent=er;return}save();box.innerHTML='';render()};
+  box.querySelector('[data-close]').onclick=()=>box.innerHTML='';
+  box.querySelector('.sheet').onclick=e=>{if(e.target.classList.contains('sheet'))box.innerHTML=''};
+  f.onchange=e=>{if(e.target.name==='hato'&&f.dataset.redraw)f.dataset.redraw&&redraw[f.dataset.redraw]?.(f)};
+  return f;
+}
+const n=v=>+(String(v||'').replace(/\D/g,''))||0;
+const dec=v=>+(String(v||'').replace(',','.').replace(/[^\d.]/g,''))||0;
+const miles=v=>{const d=String(v||'').replace(/\D/g,'');return d?d.replace(/\B(?=(\d{3})+(?!\d))/g,'.'):''};
+const redraw={checks(f){const h=f.hato.value;f.querySelector('#chk').innerHTML=checks(h)}};
+const checks=h=>{const an=animalesDe(h).filter(a=>a.estado==='activo');return an.length?an.map(a=>`<label><input type="checkbox" name="an" value="${a.id}" checked>${esc(a.arete)}</label>`).join(''):'<div class="empty" style="grid-column:1/-1">No hay animales activos en este hato</div>'};
+
+function fAnimal(hid){
+  const ho=hatosAbiertos();if(!ho.length)return alertSheet('Primero creá un hato en una finca.');
+  sheet('Nuevo animal',`${fld('Número de arete *','arete','text','','inputmode="numeric" autocomplete="off"')}${sel('Hato','hato',ho,hid||ho[0][0])}
+  <div class="two">${fld('Fecha de entrada','entrada','date',today())}${fld('Costo de compra (₡)','costo','text','',mon)}</div>
+  <div class="two">${fld('Peso estimado (kg)','peso','text','',num)}${sel('Sexo','sexo',[['',''],['Macho','Macho'],['Hembra','Hembra']],'')}</div>
+  <div class="two">${fld('Raza','raza')}${fld('Comprado a','proveedor')}</div>
+  <div class="f"><label for="i-foto">Foto (opcional)</label><input id="i-foto" name="foto" type="file" accept="image/*"></div>`,(o,f)=>{
+    const ar=o.arete.trim();if(!ar)return 'Falta el número de arete';
+    if(D.animales.some(a=>a.arete===ar))return 'Ya existe un animal con el arete '+ar;
+    const a={id:uid(),arete:ar,hato:o.hato,entrada:o.entrada,costo:n(o.costo),peso:n(o.peso),proveedor:o.proveedor,sexo:o.sexo,raza:o.raza,foto:'',estado:'activo',valor:0};
+    D.animales.push(a);const file=f.foto.files[0];if(file)shrink(file).then(u=>{a.foto=u;save();render()});
+  });
+}
+function fAplic(hid,aid){
+  const ho=hatosAbiertos();if(!ho.length)return alertSheet('Primero creá un hato en una finca.');
+  const h=aid?animal(aid).hato:(hid||ho[0][0]);
+  const f=sheet(aid?'Aplicación · arete '+esc(animal(aid).arete):'Nueva aplicación',`${aid?`<input type="hidden" name="an" value="${aid}">`:sel('Hato','hato',ho,h)+`<div class="f"><label>Animales (desmarcá los que no)</label></div><div class="checks" id="chk">${checks(h)}</div>`}
+  <div class="two">${fld('Fecha','fecha','date',today())}${sel('Tipo','tipo',[['Vacuna','Vacuna'],['Desparasitante','Desparasitante'],['Vitamina','Vitamina'],['Antibiótico','Antibiótico'],['Otro','Otro']],'Desparasitante')}</div>
+  ${fld('Producto *','producto')}<div class="two">${fld('Dosis por animal (ml)','dosis','text','','inputmode="decimal"')}${fld('Costo total (₡)','costo','text','',mon)}</div>${fld('Notas','notas')}`,o=>{
+    const an=o._all.getAll('an');if(!an.length)return 'Escogé al menos un animal';if(!o.producto.trim())return 'Falta el producto';
+    D.aplicaciones.push({id:uid(),fecha:o.fecha,producto:o.producto.trim(),tipo:o.tipo,dosis:dec(o.dosis),costo:n(o.costo),notas:o.notas,animales:an});
+  });
+  if(!aid)f.dataset.redraw='checks';
+}
+function fGasto(hid){
+  const ho=hatosAbiertos();if(!ho.length)return alertSheet('Primero creá un hato en una finca.');
+  sheet('Gasto general',`${sel('Hato','hato',ho,hid||ho[0][0])}<div class="two">${fld('Fecha','fecha','date',today())}${sel('Tipo','tipo',[['Transporte','Transporte'],['Alimentación','Alimentación'],['Otro','Otro']],'Transporte')}</div>${fld('Monto (₡) *','monto','text','',mon)}${fld('Notas','notas')}`,o=>{
+    if(!n(o.monto))return 'Falta el monto';D.gastos.push({id:uid(),hato:o.hato,fecha:o.fecha,tipo:o.tipo,monto:n(o.monto),notas:o.notas});
+  });
+}
+function fVenta(aid){
+  const act=D.animales.filter(a=>a.estado==='activo');if(!act.length)return alertSheet('No hay animales activos.');
+  sheet('Venta o salida',`${aid?`<input type="hidden" name="animal" value="${aid}"><p class="note">Arete ${esc(animal(aid).arete)}</p>`:sel('Arete','animal',act.map(a=>[a.id,a.arete+' · '+hato(a.hato).nombre]),act[0].id)}
+  <div class="two">${sel('Tipo','tipo',[['Venta','Venta'],['Muerte','Muerte']],'Venta')}${fld('Fecha','fecha','date',today())}</div>
+  <div class="two">${fld('Precio (₡)','precio','text','',mon)}${fld('Peso en subasta (kg)','peso','text','',num)}</div>
+  <div class="two">${fld('Rebajo de subasta (₡)','rebajo','text','',mon)}${fld('Subasta, comprador o causa','quien')}</div>`,o=>{
+    if(o.tipo==='Venta'&&!n(o.precio))return 'Falta el precio';
+    D.ventas.push({id:uid(),animal:o.animal,tipo:o.tipo,fecha:o.fecha,precio:n(o.precio),peso:n(o.peso),rebajo:n(o.rebajo),quien:o.quien});
+    animal(o.animal).estado=o.tipo==='Venta'?'vendido':'muerto';
+  });
+}
+function fTras(aid){
+  const a=animal(aid);const ho=hatosAbiertos().filter(([id])=>id!==a.hato);
+  if(!ho.length)return alertSheet('No hay otro hato abierto. Creá uno en la finca de destino.');
+  sheet('Trasladar arete '+esc(a.arete),`<p class="note">Ahora está en ${esc(hato(a.hato).nombre)} · ${esc(finca(hato(a.hato).finca).nombre)}. Se lleva sus costos al hato nuevo.</p>${sel('Hato de destino','a',ho,ho[0][0])}${fld('Fecha','fecha','date',today())}`,o=>{
+    D.traslados.push({id:uid(),animal:aid,fecha:o.fecha,de:a.hato,a:o.a});a.hato=o.a;
+  },'Trasladar');
+}
+function fValor(aid){const a=animal(aid);sheet('Valor estimado · arete '+esc(a.arete),fld('Valor actual (₡)','valor','text',a.valor?miles(a.valor):'',mon),o=>{a.valor=n(o.valor)})}
+function fHato(fid){
+  const m=['ene','feb','mar','abr','may','jun','jul','ago','set','oct','nov','dic'];const d=new Date();
+  sheet('Nuevo hato · '+esc(finca(fid).nombre),fld('Nombre *','nombre','text','Hato '+m[d.getMonth()]+' '+d.getFullYear())+fld('Fecha de inicio','inicio','date',today()),o=>{
+    if(!o.nombre.trim())return 'Falta el nombre';D.hatos.push({id:uid(),finca:fid,nombre:o.nombre.trim(),inicio:o.inicio,estado:'abierto',cierre:''});
+  },'Crear hato');
+}
+function fRen(fid){const f=finca(fid);sheet('Cambiar nombre',fld('Nombre de la finca','nombre','text',f.nombre),o=>{if(!o.nombre.trim())return 'Falta el nombre';f.nombre=o.nombre.trim()})}
+function fDelFinca(fid){
+  const f=finca(fid),hs=hatosDe(fid).map(h=>h.id),an=D.animales.filter(a=>hs.includes(a.hato)).map(a=>a.id);
+  sheet('Eliminar '+esc(f.nombre),(hs.length||an.length?`<p class="err">Esta finca tiene ${hs.length} hato${hs.length===1?'':'s'} y ${an.length} animal${an.length===1?'':'es'}. Se borra todo eso también, con sus aplicaciones, gastos y ventas.</p>`:'<p class="note">Esta finca está vacía.</p>')+'<p>Esto no se puede deshacer.</p>',()=>{
+    D.fincas=D.fincas.filter(x=>x.id!==fid);D.hatos=D.hatos.filter(h=>!hs.includes(h.id));D.animales=D.animales.filter(a=>!an.includes(a.id));
+    D.gastos=D.gastos.filter(g=>!hs.includes(g.hato));D.ventas=D.ventas.filter(v=>!an.includes(v.animal));D.traslados=D.traslados.filter(t=>!an.includes(t.animal));
+    D.aplicaciones=D.aplicaciones.map(p=>({...p,animales:p.animales.filter(x=>!an.includes(x))})).filter(p=>p.animales.length);
+    stack=[];cur={v:'fincas',p:null};
+  },'Sí, eliminar');
+  box.querySelector('form button.b-oli').classList.replace('b-oli','b-ter');
+}
+function fCerrar(hid){
+  const c=cuentas(hid);
+  sheet('Cerrar '+esc(hato(hid).nombre),`<dl class="dl"><dt>Ventas</dt><dd class="money">${col(c.ven)}</dd><dt>Compra</dt><dd class="money">−${col(c.compra)}</dd><dt>Sanidad</dt><dd class="money">−${col(c.san)}</dd><dt>Gastos generales</dt><dd class="money">−${col(c.gas)}</dd><dt>Ganancia</dt><dd class="money ${c.res>=0?'pos':'neg'}" style="font-size:24px">${c.res<0?'−':''}${col(Math.abs(c.res))}</dd></dl>${c.activos?`<p class="err">Ojo: todavía hay ${c.activos} animal${c.activos>1?'es':''} activo${c.activos>1?'s':''} en este hato.</p>`:''}${fld('Fecha de cierre','cierre','date',today())}`,o=>{const h=hato(hid);h.estado='cerrado';h.cierre=o.cierre},'Cerrar hato');
+}
+function alertSheet(t){box.innerHTML=`<div class="sheet"><form><h3>Aviso</h3><p>${esc(t)}</p><div class="end"><button type="button" class="btn b-oli" data-close>Entendido</button></div></form></div>`;box.querySelector('[data-close]').onclick=()=>box.innerHTML=''}
+
+function shrink(file){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};im.src=fr.result};fr.readAsDataURL(file)})}
+
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');if(g){const[v,p]=g.dataset.go.split(':');go(v,p);return}
+  const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return}
+  const a=e.target.closest('[data-act]');if(!a)return;
+  const[k,p]=a.dataset.act.split(':');
+  ({animal:()=>fAnimal(p),aplic:()=>fAplic(p),aplic1:()=>fAplic(null,p),gasto:()=>fGasto(p),venta:()=>fVenta(p),tras:()=>fTras(p),valor:()=>fValor(p),hato:()=>fHato(p),delFinca:()=>fDelFinca(p),renFinca:()=>fRen(p),cerrar:()=>fCerrar(p),
+    addFinca:()=>{let i=D.fincas.length+1;while(D.fincas.some(f=>f.nombre==='Finca '+i))i++;D.fincas.push({id:uid(),nombre:'Finca '+i});save();render()}})[k]?.();
+});
+document.addEventListener('input',e=>{if(e.target.dataset?.mon){const el=e.target,before=el.value.slice(0,el.selectionStart).replace(/\D/g,'').length;el.value=miles(el.value);let p=0,k=0;while(p<el.value.length&&k<before){if(/\d/.test(el.value[p]))k++;p++}try{el.setSelectionRange(p,p)}catch(_){}return}if(e.target.id==='q'){q=e.target.value.trim();document.getElementById('res').innerHTML=resHTML()}});
+document.addEventListener('change',e=>{const id=e.target.dataset?.foto;if(id&&e.target.files[0])shrink(e.target.files[0]).then(u=>{animal(id).foto=u;save();render()})});
+document.getElementById('back').onclick=()=>{cur=stack.pop()||{v:'inicio',p:null};render();scrollTo(0,0)};
+document.getElementById('sol').onclick=()=>{D.sol=!D.sol;save();render()};
+(async()=>{
+  try{D=await idbGet('datos')}catch(e){}
+  if(!D||!D.fincas){D=vacio();save()}
+  try{persistente=await navigator.storage?.persist?.()||await navigator.storage?.persisted?.()||false}catch(e){}
+  render();
+})();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
