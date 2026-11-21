@@ -254,7 +254,7 @@ mas(){
   <div class="card"><h2 style="margin-top:0">Sacar Excel de un hato</h2><p class="note">Un archivo por hato, con las hojas Resumen, Animales, Salud, Costos, Ventas y Traslados. Lo ideal es sacarlo cuando cerrás el hato y guardarlo en tu carpeta de ganado.</p>
   ${D.fincas.map(f=>{const hs=hatosDe(f.id);return hs.length?`<h2 style="font-size:19px;margin:16px 0 8px">${esc(f.nombre)}</h2><div class="list">${hs.map(h=>`<button class="row" data-act="xls:${h.id}"><div class="g"><div class="big" style="font-size:20px">${esc(h.nombre)}</div><div class="sm">${h.estado==='cerrado'?'Cerrado el '+fec(h.cierre):'Abierto'} · ${animalesDe(h.id).length} animales</div></div><span class="chip v">Excel</span></button>`).join('')}</div>`:''}).join('')||'<div class="empty">Todavía no hay hatos</div>'}</div>
   <div class="card"><h2 style="margin-top:0">Respaldar</h2><p class="note">Crea un archivo con todo, fotos incluidas, para guardarlo en tu Drive. Último respaldo: ${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}.</p><button class="btn b-ocr" disabled style="opacity:.6">Llega en un paso siguiente</button></div>
-  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este teléfono, apenas tocás Guardar. No se suben a internet. ${persistente?'El teléfono los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p></div></div>`;
+  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este teléfono, apenas tocás Guardar. No se suben a internet. ${persistente?'El teléfono los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 4</p></div></div>`;
 }};
 const titles={inicio:'Inicio',fincas:'Fincas',finca:'Finca',hato:'Hato',animal:'Animal',mas:'Exportar',hist:'Histórico'};
 
@@ -486,7 +486,7 @@ document.getElementById('sol').onclick=()=>{D.sol=!D.sol;save();render()};
   try{persistente=await navigator.storage?.persist?.()||await navigator.storage?.persisted?.()||false}catch(e){}
   render();
 })();
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator){const habia=!!navigator.serviceWorker.controller;let ya=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(habia&&!ya){ya=true;location.reload()}});addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}))}
 }
 </script>
 </body>
