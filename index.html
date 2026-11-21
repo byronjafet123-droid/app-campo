@@ -255,7 +255,7 @@ mas(){
   ${D.fincas.map(f=>{const hs=hatosDe(f.id);return hs.length?`<h2 style="font-size:19px;margin:16px 0 8px">${esc(f.nombre)}</h2><div class="list">${hs.map(h=>`<button class="row" data-act="xls:${h.id}"><div class="g"><div class="big" style="font-size:20px">${esc(h.nombre)}</div><div class="sm">${h.estado==='cerrado'?'Cerrado el '+fec(h.cierre):'Abierto'} · ${animalesDe(h.id).length} animales</div></div><span class="chip v">Excel</span></button>`).join('')}</div>`:''}).join('')||'<div class="empty">Todavía no hay hatos</div>'}</div>
   <div class="card"><h2 style="margin-top:0">Respaldar</h2><p class="note">Crea un archivo con todo, fotos incluidas. Guardalo en tu Drive más o menos una vez al mes. Último respaldo: <b>${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}</b>.</p><button class="btn b-ocr" data-act="respaldar">Respaldar ahora</button></div>
   <div class="card"><h2 style="margin-top:0">Recuperar un respaldo</h2><p class="note">Carga un archivo de respaldo en este aparato. Sirve si cambiás de teléfono o para ver todo en la computadora. <b>Reemplaza</b> lo que haya en este aparato.</p><label class="btn ghost" style="display:inline-flex;align-items:center;cursor:pointer" for="rec">Escoger archivo de respaldo</label><input id="rec" class="hidden" type="file" accept=".json,.txt,application/json,text/plain"></div>
-  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este aparato, apenas tocás Guardar. No se suben a internet. ${persistente?'Este aparato los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 5</p></div></div>`;
+  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este aparato, apenas tocás Guardar. No se suben a internet. ${persistente?'Este aparato los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 5.1</p></div></div>`;
 }};
 const titles={inicio:'Inicio',fincas:'Fincas',finca:'Finca',hato:'Hato',animal:'Animal',mas:'Exportar',hist:'Histórico'};
 
@@ -392,6 +392,7 @@ function alertSheet(t){box.innerHTML=`<div class="sheet"><form><h3>Aviso</h3><p>
 
 
 /* ---------- Excel (xlsx hecho a mano, sin internet) ---------- */
+const MOVIL=/Android|iPhone|iPad/i.test(navigator.userAgent)||!!navigator.userAgentData?.mobile;
 const XE=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
 const colL=i=>{let s='';i++;while(i){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=(i-m-1)/26}return s};
 const serial=d=>{const[y,m,dd]=d.split('-').map(Number);return (Date.UTC(y,m-1,dd)-Date.UTC(1899,11,30))/86400000};
@@ -460,7 +461,7 @@ function fExcel(hid){
   const h=hato(hid),f=finca(h.finca);
   const nom=(h.nombre+' - '+f.nombre+' - '+today()).replace(/[\\/:*?"<>|]/g,'-')+'.xlsx';
   const blob=xlsx(libroHato(hid));const file=new File([blob],nom,{type:blob.type});
-  const share=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  const share=MOVIL&&!!(navigator.canShare&&navigator.canShare({files:[file]}));
   box.innerHTML=`<div class="sheet"><form><h3>Excel listo</h3><p><b>${esc(nom)}</b></p><p class="note">${share?'<b>Compartir</b> te deja mandarlo a Drive, WhatsApp o donde querás. ':''}<b>Guardar en el teléfono</b> lo deja en la carpeta Descargas.</p><div class="list"><button type="button" class="btn b-oli" id="xdl">Guardar en el teléfono</button>${share?'<button type="button" class="btn b-ocr" id="xsh">Compartir (Drive, WhatsApp…)</button>':''}<button type="button" class="btn ghost" data-close>Cerrar</button></div></form></div>`;
   box.querySelector('[data-close]').onclick=()=>box.innerHTML='';
   box.querySelector('#xdl').onclick=()=>{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000)};
@@ -469,18 +470,19 @@ function fExcel(hid){
 
 
 /* ---------- Respaldo ---------- */
+
 function fRespaldar(){
   const nom='Respaldo ganado '+today();
   const txt=JSON.stringify({app:'app-campo',version:1,fecha:today(),datos:D});
   const kb=Math.max(1,Math.round(txt.length/1024));
   let file=new File([txt],nom+'.json',{type:'application/json'});
   if(navigator.canShare&&!navigator.canShare({files:[file]})){const t=new File([txt],nom+'.txt',{type:'text/plain'});if(navigator.canShare({files:[t]}))file=t}
-  const share=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  const share=MOVIL&&!!(navigator.canShare&&navigator.canShare({files:[file]}));
   const marca=()=>{D.respaldo=today();save();render()};
-  box.innerHTML=`<div class="sheet"><form><h3>Respaldo listo</h3><p><b>${esc(file.name)}</b> · ${kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB'}</p><p class="note">Tiene ${D.fincas.length} fincas, ${D.hatos.length} hatos y ${D.animales.length} animales, con sus fotos. ${share?'Tocá <b>Guardar en Drive</b> y escogé Drive en el menú.':'Se guarda en la carpeta Descargas; después subilo a tu Drive.'}</p><div class="list">${share?'<button type="button" class="btn b-ocr" id="rsh">Guardar en Drive (compartir)</button>':''}<button type="button" class="btn ${share?'ghost':'b-ocr'}" id="rdl">Guardar en este aparato</button><button type="button" class="btn ghost" data-close>Cerrar</button></div></form></div>`;
+  box.innerHTML=`<div class="sheet"><form><h3>Respaldo listo</h3><p><b>${esc(file.name)}</b> · ${kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB'}</p><p class="note">Tiene ${D.fincas.length} fincas, ${D.hatos.length} hatos y ${D.animales.length} animales, con sus fotos. ${share?'Tocá <b>Guardar en Drive</b> y escogé Drive en el menú.':'Se guarda en la carpeta <b>Descargas</b> de esta computadora. Para tenerlo en Drive, abrí drive.google.com y arrastrá el archivo ahí.'}</p><div class="list">${share?'<button type="button" class="btn b-ocr" id="rsh">Guardar en Drive (compartir)</button>':''}<button type="button" class="btn ${share?'ghost':'b-ocr'}" id="rdl">Guardar en este aparato</button><button type="button" class="btn ghost" data-close>Cerrar</button></div></form></div>`;
   box.querySelector('[data-close]').onclick=()=>box.innerHTML='';
   box.querySelector('#rdl').onclick=()=>{const u=URL.createObjectURL(file);const a=document.createElement('a');a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);box.innerHTML='';marca()};
-  box.querySelector('#rsh')?.addEventListener('click',()=>navigator.share({files:[file],title:file.name}).then(()=>{box.innerHTML='';marca()}).catch(()=>{}));
+  box.querySelector('#rsh')?.addEventListener('click',()=>navigator.share({files:[file],title:file.name}).then(()=>{box.innerHTML='';marca()}).catch(e=>{if(e&&e.name!=='AbortError')box.querySelector('.note').innerHTML='No se pudo abrir el menú de compartir. Usá <b>Guardar en este aparato</b> y subilo a Drive después.'}));
 }
 function fRecuperar(file){
   const fr=new FileReader();
