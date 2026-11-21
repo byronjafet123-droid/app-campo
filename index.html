@@ -253,8 +253,9 @@ mas(){
   <div class="list" style="margin-top:16px">
   <div class="card"><h2 style="margin-top:0">Sacar Excel de un hato</h2><p class="note">Un archivo por hato, con las hojas Resumen, Animales, Salud, Costos, Ventas y Traslados. Lo ideal es sacarlo cuando cerrás el hato y guardarlo en tu carpeta de ganado.</p>
   ${D.fincas.map(f=>{const hs=hatosDe(f.id);return hs.length?`<h2 style="font-size:19px;margin:16px 0 8px">${esc(f.nombre)}</h2><div class="list">${hs.map(h=>`<button class="row" data-act="xls:${h.id}"><div class="g"><div class="big" style="font-size:20px">${esc(h.nombre)}</div><div class="sm">${h.estado==='cerrado'?'Cerrado el '+fec(h.cierre):'Abierto'} · ${animalesDe(h.id).length} animales</div></div><span class="chip v">Excel</span></button>`).join('')}</div>`:''}).join('')||'<div class="empty">Todavía no hay hatos</div>'}</div>
-  <div class="card"><h2 style="margin-top:0">Respaldar</h2><p class="note">Crea un archivo con todo, fotos incluidas, para guardarlo en tu Drive. Último respaldo: ${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}.</p><button class="btn b-ocr" disabled style="opacity:.6">Llega en un paso siguiente</button></div>
-  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este teléfono, apenas tocás Guardar. No se suben a internet. ${persistente?'El teléfono los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 4</p></div></div>`;
+  <div class="card"><h2 style="margin-top:0">Respaldar</h2><p class="note">Crea un archivo con todo, fotos incluidas. Guardalo en tu Drive más o menos una vez al mes. Último respaldo: <b>${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}</b>.</p><button class="btn b-ocr" data-act="respaldar">Respaldar ahora</button></div>
+  <div class="card"><h2 style="margin-top:0">Recuperar un respaldo</h2><p class="note">Carga un archivo de respaldo en este aparato. Sirve si cambiás de teléfono o para ver todo en la computadora. <b>Reemplaza</b> lo que haya en este aparato.</p><label class="btn ghost" style="display:inline-flex;align-items:center;cursor:pointer" for="rec">Escoger archivo de respaldo</label><input id="rec" class="hidden" type="file" accept=".json,.txt,application/json,text/plain"></div>
+  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este aparato, apenas tocás Guardar. No se suben a internet. ${persistente?'Este aparato los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 5</p></div></div>`;
 }};
 const titles={inicio:'Inicio',fincas:'Fincas',finca:'Finca',hato:'Hato',animal:'Animal',mas:'Exportar',hist:'Histórico'};
 
@@ -466,6 +467,36 @@ function fExcel(hid){
   box.querySelector('#xsh')?.addEventListener('click',()=>navigator.share({files:[file],title:nom}).catch(()=>{}));
 }
 
+
+/* ---------- Respaldo ---------- */
+function fRespaldar(){
+  const nom='Respaldo ganado '+today();
+  const txt=JSON.stringify({app:'app-campo',version:1,fecha:today(),datos:D});
+  const kb=Math.max(1,Math.round(txt.length/1024));
+  let file=new File([txt],nom+'.json',{type:'application/json'});
+  if(navigator.canShare&&!navigator.canShare({files:[file]})){const t=new File([txt],nom+'.txt',{type:'text/plain'});if(navigator.canShare({files:[t]}))file=t}
+  const share=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  const marca=()=>{D.respaldo=today();save();render()};
+  box.innerHTML=`<div class="sheet"><form><h3>Respaldo listo</h3><p><b>${esc(file.name)}</b> · ${kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB'}</p><p class="note">Tiene ${D.fincas.length} fincas, ${D.hatos.length} hatos y ${D.animales.length} animales, con sus fotos. ${share?'Tocá <b>Guardar en Drive</b> y escogé Drive en el menú.':'Se guarda en la carpeta Descargas; después subilo a tu Drive.'}</p><div class="list">${share?'<button type="button" class="btn b-ocr" id="rsh">Guardar en Drive (compartir)</button>':''}<button type="button" class="btn ${share?'ghost':'b-ocr'}" id="rdl">Guardar en este aparato</button><button type="button" class="btn ghost" data-close>Cerrar</button></div></form></div>`;
+  box.querySelector('[data-close]').onclick=()=>box.innerHTML='';
+  box.querySelector('#rdl').onclick=()=>{const u=URL.createObjectURL(file);const a=document.createElement('a');a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);box.innerHTML='';marca()};
+  box.querySelector('#rsh')?.addEventListener('click',()=>navigator.share({files:[file],title:file.name}).then(()=>{box.innerHTML='';marca()}).catch(()=>{}));
+}
+function fRecuperar(file){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    let r=null;try{r=JSON.parse(fr.result)}catch(e){}
+    const d=r&&r.app==='app-campo'&&r.datos&&Array.isArray(r.datos.fincas)?r.datos:null;
+    if(!d)return alertSheet('Ese archivo no es un respaldo de la app de campo.');
+    const k=x=>Array.isArray(d[x])?d[x].length:0;
+    sheet('Recuperar respaldo',`<p>Respaldo del <b>${fec(r.fecha)}</b>: ${k('fincas')} fincas, ${k('hatos')} hatos, ${k('animales')} animales.</p><p class="err">Esto reemplaza todo lo que hay ahora en este aparato (${D.fincas.length} fincas, ${D.hatos.length} hatos, ${D.animales.length} animales).</p>`,()=>{
+      const sol=D.sol;D=Object.assign({fincas:[],hatos:[],animales:[],aplicaciones:[],gastos:[],traslados:[],ventas:[],sol:false,respaldo:''},d);D.sol=sol;stack=[];cur={v:'inicio',p:null};
+    },'Sí, recuperar');
+    box.querySelector('form button.b-oli').classList.replace('b-oli','b-ter');
+  };
+  fr.readAsText(file);
+}
+
 function shrink(file){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};im.src=fr.result};fr.readAsDataURL(file)})}
 
 document.addEventListener('click',e=>{
@@ -473,11 +504,11 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return}
   const a=e.target.closest('[data-act]');if(!a)return;
   const[k,p]=a.dataset.act.split(':');
-  ({animal:()=>fAnimal(p),aplic:()=>fAplic(p),aplic1:()=>fAplic(null,p),editar:()=>fAnimal(null,p),hecha:()=>{const r=D.aplicaciones.find(x=>x.id===p);if(r){r.hecha=true;save();render()}},xls:()=>fExcel(p),gasto:()=>fGasto(p),venta:()=>fVenta(p),tras:()=>fTras(p),valor:()=>fValor(p),hato:()=>fHato(p),delFinca:()=>fDelFinca(p),renFinca:()=>fRen(p),cerrar:()=>fCerrar(p),
+  ({animal:()=>fAnimal(p),aplic:()=>fAplic(p),aplic1:()=>fAplic(null,p),editar:()=>fAnimal(null,p),hecha:()=>{const r=D.aplicaciones.find(x=>x.id===p);if(r){r.hecha=true;save();render()}},xls:()=>fExcel(p),respaldar:fRespaldar,gasto:()=>fGasto(p),venta:()=>fVenta(p),tras:()=>fTras(p),valor:()=>fValor(p),hato:()=>fHato(p),delFinca:()=>fDelFinca(p),renFinca:()=>fRen(p),cerrar:()=>fCerrar(p),
     addFinca:()=>{let i=D.fincas.length+1;while(D.fincas.some(f=>f.nombre==='Finca '+i))i++;D.fincas.push({id:uid(),nombre:'Finca '+i});save();render()}})[k]?.();
 });
 document.addEventListener('input',e=>{if(e.target.dataset?.mon){const el=e.target,before=el.value.slice(0,el.selectionStart).replace(/\D/g,'').length;el.value=miles(el.value);let p=0,k=0;while(p<el.value.length&&k<before){if(/\d/.test(el.value[p]))k++;p++}try{el.setSelectionRange(p,p)}catch(_){}return}if(e.target.id==='q'){q=e.target.value.trim();document.getElementById('res').innerHTML=resHTML()}});
-document.addEventListener('change',e=>{const id=e.target.dataset?.foto;if(id&&e.target.files[0])shrink(e.target.files[0]).then(u=>{animal(id).foto=u;save();render()})});
+document.addEventListener('change',e=>{if(e.target.id==='rec'){const f=e.target.files[0];e.target.value='';if(f)fRecuperar(f);return}const id=e.target.dataset?.foto;if(id&&e.target.files[0])shrink(e.target.files[0]).then(u=>{animal(id).foto=u;save();render()})});
 document.getElementById('back').onclick=()=>{cur=stack.pop()||{v:'inicio',p:null};render();scrollTo(0,0)};
 document.getElementById('sol').onclick=()=>{D.sol=!D.sol;save();render()};
 (async()=>{
