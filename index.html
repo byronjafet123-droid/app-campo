@@ -62,6 +62,7 @@ nav button.on{color:var(--ink);box-shadow:inset 0 4px 0 var(--ocr)}
 .an .ph{aspect-ratio:4/3;background:var(--card2);display:block;width:100%}
 .an .ph img,.an .ph svg{width:100%;height:100%;object-fit:cover;display:block}
 .an .tx{padding:8px 10px 10px}
+.an .sn{color:var(--soft);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0 4px}
 .an .ar{font:800 26px/1 "Barlow Semi Condensed",sans-serif}
 .chip{display:inline-block;font-size:14px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--card2);color:var(--soft)}
 .chip.v{background:var(--ocr);color:#fff}.chip.m{background:var(--ter);color:#fff}.chip.c{background:var(--line);color:var(--ink)}
@@ -182,14 +183,14 @@ let cur={v:'inicio',p:null},stack=[],q='';
 const go=(v,p)=>{stack.push(cur);cur={v,p};render();scrollTo(0,0)};
 const tab=v=>{stack=[];cur={v,p:null};render();scrollTo(0,0)};
 
-const resHTML=()=>{if(!q)return '';const res=D.animales.filter(a=>a.arete.includes(q));return res.length?res.map(a=>`<button class="row" data-go="animal:${a.id}"><div class="g"><div class="big">Arete ${esc(a.arete)}</div><div class="sm">${esc(hato(a.hato)?.nombre)} · ${esc(finca(hato(a.hato)?.finca)?.nombre)}</div></div>${chipE(a)}${chev}</button>`).join(''):'<div class="empty">No hay ningún animal con ese arete</div>'};
+const resHTML=()=>{if(!q)return '';const ql=q.toLowerCase();const res=D.animales.filter(a=>a.arete.toLowerCase().includes(ql)||(a.senas||'').toLowerCase().includes(ql));return res.length?res.map(a=>`<button class="row" data-go="animal:${a.id}"><div class="g"><div class="big">Arete ${esc(a.arete)}</div><div class="sm">${a.senas?esc(a.senas)+' · ':''}${esc(hato(a.hato)?.nombre)} · ${esc(finca(hato(a.hato)?.finca)?.nombre)}</div></div>${chipE(a)}${chev}</button>`).join(''):'<div class="empty">No hay ningún animal con ese arete</div>'};
 const V={
 inicio(){
   const act=D.animales.filter(a=>a.estado==='activo').length;
   const ab=D.hatos.filter(h=>h.estado==='abierto').length;
   const inv=D.hatos.filter(h=>h.estado==='abierto').reduce((s,h)=>s+cuentas(h.id).inv,0);
-  const ult=[...D.aplicaciones.map(p=>({f:p.fecha,t:p.producto+' · '+p.animales.length+' animal'+(p.animales.length>1?'es':''),m:p.costo,c:'ap'})),...D.gastos.map(g=>({f:g.fecha,t:g.tipo+' · '+(hato(g.hato)?.nombre||''),m:g.monto,c:''})),...D.ventas.map(v=>({f:v.fecha,t:v.tipo+' · arete '+(animal(v.animal)?.arete||''),m:v.precio,c:'ve'}))].sort((a,b)=>b.f.localeCompare(a.f)).slice(0,5);
-  return `<input class="search" id="q" type="search" inputmode="numeric" placeholder="Buscar arete…" value="${esc(q)}" aria-label="Buscar arete">
+  const ult=[...D.aplicaciones.map(p=>({f:p.fecha,t:apTit(p)+' · '+p.animales.length+' animal'+(p.animales.length>1?'es':''),m:p.costo,c:'ap'})),...D.gastos.map(g=>({f:g.fecha,t:g.tipo+' · '+(hato(g.hato)?.nombre||''),m:g.monto,c:''})),...D.ventas.map(v=>({f:v.fecha,t:v.tipo+' · arete '+(animal(v.animal)?.arete||''),m:v.precio,c:'ve'}))].sort((a,b)=>b.f.localeCompare(a.f)).slice(0,5);
+  return `<input class="search" id="q" type="search" placeholder="Buscar arete o señas…" value="${esc(q)}" aria-label="Buscar arete">
   <div class="list res" id="res" style="margin-top:10px">${resHTML()}</div>
   <div class="quick">
     <button class="b-oli" data-act="animal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>Nuevo animal</button>
@@ -203,6 +204,7 @@ inicio(){
     <div class="stat"><div class="l">Invertido en hatos abiertos</div><div class="v num money">${col(inv)}</div></div>
   </div>
   ${D.hatos.length?'':'<div class="card" style="margin-top:14px"><h2 style="margin-top:0">Para empezar</h2><p>Entrá a <b>Fincas</b>, escogé una finca y creá tu primer hato. Después ya podés agregar animales.</p><button class="btn b-oli" data-tab="fincas">Ir a Fincas</button></div>'}
+  ${(()=>{const pr=D.aplicaciones.filter(r=>r.proxima&&!r.hecha&&apHato(r)).sort((a,b)=>a.proxima.localeCompare(b.proxima)).slice(0,5);const hoy=today();return pr.length?`<h2>Próximas revisiones</h2><ul class="tl">${pr.map(r=>`<li class="ap"><div class="d" style="${r.proxima<hoy?'color:var(--bad)':''}">${fec(r.proxima)}${r.proxima<hoy?' · atrasada':r.proxima===hoy?' · hoy':''}</div><div>${esc(apHato(r).nombre)} · ${r.animales.length} animal${r.animales.length>1?'es':''}</div><div class="d">Anterior: ${esc(apTit(r))}</div><div class="acts" style="margin:8px 0 0"><a class="btn ghost" style="display:inline-flex;align-items:center;text-decoration:none;min-height:44px" href="${gcal(r)}" target="_blank" rel="noopener">Poner alarma</a><button class="btn ghost" style="min-height:44px" data-act="hecha:${r.id}">Ya se hizo</button></div></li>`).join('')}</ul>`:''})()}
   <h2>Últimos registros</h2>
   ${ult.length?'':'<div class="empty">Todavía no hay registros</div>'}<ul class="tl">${ult.map(u=>`<li class="${u.c}"><div class="d">${fec(u.f)}</div><div style="display:flex;justify-content:space-between;gap:10px"><span>${esc(u.t)}</span><span class="money num">${col(u.m)}</span></div></li>`).join('')}</ul>
   <p class="note">Último respaldo: ${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}</p>`;
@@ -223,20 +225,20 @@ hato(id){
   return `<h1>${esc(h.nombre)}</h1><p class="note">${esc(finca(h.finca).nombre)} · desde ${fec(h.inicio)}${h.estado==='cerrado'?' · cerrado el '+fec(h.cierre):''}</p>
   <p class="note"><span class="chip">${c.activos} activo${c.activos===1?'':'s'} de ${c.an.length}</span></p>
   ${desglose(c,h.estado==='cerrado')}
-  <div class="acts">${h.estado==='abierto'?`<button class="btn b-oli" data-act="animal:${id}">+ Animal</button><button class="btn b-ocr" data-act="aplic:${id}">Aplicación al hato</button><button class="btn b-gr" data-act="gasto:${id}">Gasto</button><button class="btn ghost" data-act="cerrar:${id}">Cerrar hato</button>`:''}</div>
-  <div class="cols"><div><h2>Animales</h2>${c.an.length?`<div class="herd">${c.an.map(a=>`<button class="an" data-go="animal:${a.id}"><span class="ph">${foto(a)}</span><div class="tx"><div class="ar">${esc(a.arete)}</div>${chipE(a)}</div></button>`).join('')}</div>`:'<div class="empty">Todavía no hay animales en este hato</div>'}</div>
-  <div>  <h2>Gastos generales</h2><ul class="tl">${gs.map(g=>`<li><div class="d">${fec(g.fecha)} · ${esc(g.tipo)}</div><div style="display:flex;justify-content:space-between;gap:10px"><span>${esc(g.notas)||'&nbsp;'}</span><span class="money num">${col(g.monto)}</span></div></li>`).join('')||'<div class="empty">Sin gastos todavía</div>'}</ul></div></div>`;
+  <div class="acts"><button class="btn ghost" data-act="xls:${id}">Sacar Excel</button>${h.estado==='abierto'?`<button class="btn b-oli" data-act="animal:${id}">+ Animal</button><button class="btn b-ocr" data-act="aplic:${id}">Aplicación al hato</button><button class="btn b-gr" data-act="gasto:${id}">Gasto</button><button class="btn ghost" data-act="cerrar:${id}">Cerrar hato</button>`:''}</div>
+  <div class="cols"><div><h2>Animales</h2>${c.an.length?`<div class="herd">${c.an.map(a=>`<button class="an" data-go="animal:${a.id}"><span class="ph">${foto(a)}</span><div class="tx"><div class="ar">${esc(a.arete)}</div>${a.senas?`<div class="sn">${esc(a.senas)}</div>`:''}${chipE(a)}</div></button>`).join('')}</div>`:'<div class="empty">Todavía no hay animales en este hato</div>'}</div>
+  <div>  <h2>Gastos generales</h2><ul class="tl">${gs.map(g=>`<li><div class="d">${fec(g.fecha)} · ${esc(g.tipo)}${g.cantidad&&g.unitario?' · '+g.cantidad+' × '+col(g.unitario):''}</div><div style="display:flex;justify-content:space-between;gap:10px"><span>${esc(g.notas)||'&nbsp;'}</span><span class="money num">${col(g.monto)}</span></div></li>`).join('')||'<div class="empty">Sin gastos todavía</div>'}</ul></div></div>`;
 },
 animal(id){
   const a=animal(id),h=hato(a.hato),v=venta(id),san=sanidadDe(id);
   const hist=[{f:a.entrada,c:'',t:'Entrada al hato',s:col(a.costo)+(a.peso?' · '+a.peso+' kg estimados':'')},
-    ...D.aplicaciones.filter(p=>p.animales.includes(id)).map(p=>({f:p.fecha,c:'ap',t:p.tipo+': '+p.producto,s:(p.dosis?p.dosis+' ml · ':'')+col(p.costo/p.animales.length)})),
+    ...D.aplicaciones.filter(p=>p.animales.includes(id)).map(p=>({f:p.fecha,c:'ap',t:apTit(p),s:[p.motivo,p.dosis?p.dosis+' ml':'',p.costo?col(p.costo/p.animales.length):'',p.proxima?'Próxima: '+fec(p.proxima):''].filter(Boolean).map(esc).join(' · ')})),
     ...D.traslados.filter(t=>t.animal===id).map(t=>({f:t.fecha,c:'',t:'Traslado',s:(hato(t.de)?.nombre||'')+' → '+(hato(t.a)?.nombre||'')})),
     ...(v?[{f:v.fecha,c:'ve',t:v.tipo,s:v.tipo==='Venta'?col(v.precio)+(v.peso?' · '+v.peso+' kg en subasta':''):esc(v.quien)}]:[])].sort((x,y)=>y.f.localeCompare(x.f));
   return `<div class="file"><div><div class="fphoto">${foto(a)}<label class="ib" for="ft">${a.foto?'Cambiar foto':'Agregar foto'}</label><input id="ft" class="hidden" type="file" accept="image/*" data-foto="${id}"></div></div>
   <div><h1>Arete ${esc(a.arete)}</h1><p class="note">${esc(h.nombre)} · ${esc(finca(h.finca).nombre)} · ${chipE(a)}</p>
-  ${a.estado==='activo'?`<div class="acts"><button class="btn b-ocr" data-act="aplic1:${id}">Aplicación</button><button class="btn b-gr" data-act="tras:${id}">Trasladar</button><button class="btn b-ter" data-act="venta:${id}">Venta o salida</button><button class="btn ghost" data-act="valor:${id}">Valor estimado</button></div>`:''}
-  <dl class="dl"><dt>Entrada</dt><dd>${fec(a.entrada)}</dd><dt>Costo de compra</dt><dd class="money">${col(a.costo)}</dd><dt>Peso estimado</dt><dd>${a.peso?a.peso+' kg':'—'}</dd><dt>Sanidad</dt><dd class="money">${col(san)}</dd><dt>Valor estimado</dt><dd class="money">${a.valor?col(a.valor):'—'}</dd><dt>Sexo · raza</dt><dd>${esc(a.sexo||'—')} · ${esc(a.raza||'—')}</dd><dt>Comprado a</dt><dd>${esc(a.proveedor||'—')}</dd></dl>
+  ${a.estado==='activo'?`<div class="acts"><button class="btn b-ocr" data-act="aplic1:${id}">Aplicación</button><button class="btn b-gr" data-act="tras:${id}">Trasladar</button><button class="btn b-ter" data-act="venta:${id}">Venta o salida</button><button class="btn ghost" data-act="valor:${id}">Valor estimado</button></div>`:''}<div class="acts" style="margin-top:0"><button class="btn ghost" data-act="editar:${id}">Editar datos</button></div>
+  <dl class="dl"><dt>Color o señas</dt><dd>${esc(a.senas||'—')}</dd><dt>Entrada</dt><dd>${fec(a.entrada)}</dd><dt>Costo de compra</dt><dd class="money">${col(a.costo)}</dd><dt>Peso estimado</dt><dd>${a.peso?a.peso+' kg':'—'}</dd><dt>Sanidad</dt><dd class="money">${col(san)}</dd><dt>Valor estimado</dt><dd class="money">${a.valor?col(a.valor):'—'}</dd><dt>Sexo · raza</dt><dd>${esc(a.sexo||'—')} · ${esc(a.raza||'—')}</dd><dt>Comprado a</dt><dd>${esc(a.proveedor||'—')}</dd></dl>
   <h2>Historial</h2><ul class="tl">${hist.map(x=>`<li class="${x.c}"><div class="d">${fec(x.f)}</div><div>${esc(x.t)}</div><div class="d">${x.s}</div></li>`).join('')}</ul></div></div>`;
 },
 hist(){
@@ -249,7 +251,8 @@ hist(){
 mas(){
   return `<h1>Exportar y respaldar</h1>
   <div class="list" style="margin-top:16px">
-  <div class="card"><h2 style="margin-top:0">Exportar a Excel</h2><p class="note">Un archivo con una hoja para Fincas y hatos, Animales, Aplicaciones, Traslados, Gastos y Ventas.</p><button class="btn b-oli" disabled style="opacity:.6">Llega en un paso siguiente</button></div>
+  <div class="card"><h2 style="margin-top:0">Sacar Excel de un hato</h2><p class="note">Un archivo por hato, con las hojas Resumen, Animales, Salud, Costos, Ventas y Traslados. Lo ideal es sacarlo cuando cerrás el hato y guardarlo en tu carpeta de ganado.</p>
+  ${D.fincas.map(f=>{const hs=hatosDe(f.id);return hs.length?`<h2 style="font-size:19px;margin:16px 0 8px">${esc(f.nombre)}</h2><div class="list">${hs.map(h=>`<button class="row" data-act="xls:${h.id}"><div class="g"><div class="big" style="font-size:20px">${esc(h.nombre)}</div><div class="sm">${h.estado==='cerrado'?'Cerrado el '+fec(h.cierre):'Abierto'} · ${animalesDe(h.id).length} animales</div></div><span class="chip v">Excel</span></button>`).join('')}</div>`:''}).join('')||'<div class="empty">Todavía no hay hatos</div>'}</div>
   <div class="card"><h2 style="margin-top:0">Respaldar</h2><p class="note">Crea un archivo con todo, fotos incluidas, para guardarlo en tu Drive. Último respaldo: ${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}.</p><button class="btn b-ocr" disabled style="opacity:.6">Llega en un paso siguiente</button></div>
   <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este teléfono, apenas tocás Guardar. No se suben a internet. ${persistente?'El teléfono los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p></div></div>`;
 }};
@@ -274,10 +277,11 @@ const fld=(l,n,t='text',v='',x='')=>`<div class="f"><label for="i-${n}">${l}</la
 const sel=(l,n,o,v,x='')=>`<div class="f"><label for="i-${n}">${l}</label><select id="i-${n}" name="${n}" ${x}>${opts(o,v)}</select></div>`;
 const num='inputmode="numeric" type="text"';
 const mon='inputmode="numeric" data-mon="1" autocomplete="off"';
+let after=null;
 function sheet(title,html,onSave,label='Guardar'){
   box.innerHTML=`<div class="sheet"><form novalidate><h3>${title}</h3>${html}<div class="err" id="err"></div><div class="end"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn b-oli">${label}</button></div></form></div>`;
   const f=box.querySelector('form');
-  f.onsubmit=e=>{e.preventDefault();const o=Object.fromEntries(new FormData(f));o._all=new FormData(f);const er=onSave(o,f);if(er){f.querySelector('#err').textContent=er;return}save();box.innerHTML='';render()};
+  f.onsubmit=e=>{e.preventDefault();const o=Object.fromEntries(new FormData(f));o._all=new FormData(f);const er=onSave(o,f);if(er){f.querySelector('#err').textContent=er;return}save();box.innerHTML='';render();if(after){const g=after;after=null;g()}};
   box.querySelector('[data-close]').onclick=()=>box.innerHTML='';
   box.querySelector('.sheet').onclick=e=>{if(e.target.classList.contains('sheet'))box.innerHTML=''};
   f.onchange=e=>{if(e.target.name==='hato'&&f.dataset.redraw)f.dataset.redraw&&redraw[f.dataset.redraw]?.(f)};
@@ -289,35 +293,59 @@ const miles=v=>{const d=String(v||'').replace(/\D/g,'');return d?d.replace(/\B(?
 const redraw={checks(f){const h=f.hato.value;f.querySelector('#chk').innerHTML=checks(h)}};
 const checks=h=>{const an=animalesDe(h).filter(a=>a.estado==='activo');return an.length?an.map(a=>`<label><input type="checkbox" name="an" value="${a.id}" checked>${esc(a.arete)}</label>`).join(''):'<div class="empty" style="grid-column:1/-1">No hay animales activos en este hato</div>'};
 
-function fAnimal(hid){
-  const ho=hatosAbiertos();if(!ho.length)return alertSheet('Primero creá un hato en una finca.');
-  sheet('Nuevo animal',`${fld('Número de arete *','arete','text','','inputmode="numeric" autocomplete="off"')}${sel('Hato','hato',ho,hid||ho[0][0])}
-  <div class="two">${fld('Fecha de entrada','entrada','date',today())}${fld('Costo de compra (₡)','costo','text','',mon)}</div>
-  <div class="two">${fld('Peso estimado (kg)','peso','text','',num)}${sel('Sexo','sexo',[['',''],['Macho','Macho'],['Hembra','Hembra']],'')}</div>
-  <div class="two">${fld('Raza','raza')}${fld('Comprado a','proveedor')}</div>
-  <div class="f"><label for="i-foto">Foto (opcional)</label><input id="i-foto" name="foto" type="file" accept="image/*"></div>`,(o,f)=>{
-    const ar=o.arete.trim();if(!ar)return 'Falta el número de arete';
-    if(D.animales.some(a=>a.arete===ar))return 'Ya existe un animal con el arete '+ar;
-    const a={id:uid(),arete:ar,hato:o.hato,entrada:o.entrada,costo:n(o.costo),peso:n(o.peso),proveedor:o.proveedor,sexo:o.sexo,raza:o.raza,foto:'',estado:'activo',valor:0};
-    D.animales.push(a);const file=f.foto.files[0];if(file)shrink(file).then(u=>{a.foto=u;save();render()});
+function fAnimal(hid,eid){
+  const e=eid?animal(eid):null;
+  const ho=hatosAbiertos();if(!e&&!ho.length)return alertSheet('Primero creá un hato en una finca.');
+  sheet(e?'Editar arete '+esc(e.arete):'Nuevo animal',`<div class="two">${fld('Arete (número o nombre) *','arete','text',e?.arete||'','autocomplete="off"')}${fld('Color o señas','senas','text',e?.senas||'','autocomplete="off"')}</div>
+  ${e?`<p class="note">Hato: ${esc(hato(e.hato).nombre)} · para cambiarlo usá Trasladar</p>`:sel('Hato','hato',ho,hid||ho[0][0])}
+  <div class="two">${fld('Fecha de entrada','entrada','date',e?.entrada||today())}${fld('Costo de compra (₡)','costo','text',e?.costo?miles(e.costo):'',mon)}</div>
+  <div class="two">${fld('Peso estimado (kg)','peso','text',e?.peso||'',num)}${sel('Sexo','sexo',[['',''],['Macho','Macho'],['Hembra','Hembra']],e?.sexo||'')}</div>
+  <div class="two">${fld('Raza','raza','text',e?.raza||'')}${fld('Comprado a','proveedor','text',e?.proveedor||'')}</div>
+  <div class="f"><label for="i-foto">${e?.foto?'Cambiar foto (opcional)':'Foto (opcional)'}</label><input id="i-foto" name="foto" type="file" accept="image/*"></div>`,(o,f)=>{
+    const ar=o.arete.trim();if(!ar)return 'Falta el arete (número o nombre)';
+    if(D.animales.some(x=>x.arete.toLowerCase()===ar.toLowerCase()&&x!==e))return 'Ya existe un animal con el arete '+ar;
+    const a=e||{id:uid(),hato:o.hato,foto:'',estado:'activo',valor:0};
+    Object.assign(a,{arete:ar,senas:o.senas.trim(),entrada:o.entrada,costo:n(o.costo),peso:n(o.peso),proveedor:o.proveedor,sexo:o.sexo,raza:o.raza});
+    if(!e)D.animales.push(a);const file=f.foto.files[0];if(file)shrink(file).then(u=>{a.foto=u;save();render()});
   });
 }
+const TIPOS_SALUD=['Revisión general','Vacuna','Desparasitante','Baño contra plagas','Vitamina','Antibiótico','Medicamento','Otro'].map(x=>[x,x]);
 function fAplic(hid,aid){
   const ho=hatosAbiertos();if(!ho.length)return alertSheet('Primero creá un hato en una finca.');
   const h=aid?animal(aid).hato:(hid||ho[0][0]);
-  const f=sheet(aid?'Aplicación · arete '+esc(animal(aid).arete):'Nueva aplicación',`${aid?`<input type="hidden" name="an" value="${aid}">`:sel('Hato','hato',ho,h)+`<div class="f"><label>Animales (desmarcá los que no)</label></div><div class="checks" id="chk">${checks(h)}</div>`}
-  <div class="two">${fld('Fecha','fecha','date',today())}${sel('Tipo','tipo',[['Vacuna','Vacuna'],['Desparasitante','Desparasitante'],['Vitamina','Vitamina'],['Antibiótico','Antibiótico'],['Otro','Otro']],'Desparasitante')}</div>
-  ${fld('Producto *','producto')}<div class="two">${fld('Dosis por animal (ml)','dosis','text','','inputmode="decimal"')}${fld('Costo total (₡)','costo','text','',mon)}</div>${fld('Notas','notas')}`,o=>{
-    const an=o._all.getAll('an');if(!an.length)return 'Escogé al menos un animal';if(!o.producto.trim())return 'Falta el producto';
-    D.aplicaciones.push({id:uid(),fecha:o.fecha,producto:o.producto.trim(),tipo:o.tipo,dosis:dec(o.dosis),costo:n(o.costo),notas:o.notas,animales:an});
+  const f=sheet(aid?'Salud · arete '+esc(animal(aid).arete):'Nueva aplicación o revisión',`${aid?`<input type="hidden" name="an" value="${aid}">`:sel('Hato','hato',ho,h)+`<div class="f"><label>Animales (desmarcá los que no)</label></div><div class="checks" id="chk">${checks(h)}</div>`}
+  <div class="two">${fld('Fecha','fecha','date',today())}${sel('Qué se hizo','tipo',TIPOS_SALUD,'Vacuna')}</div>
+  <div class="two">${fld('Producto','producto')}${fld('Plaga o motivo','motivo')}</div>
+  <div class="two">${fld('Dosis por animal (ml)','dosis','text','','inputmode="decimal"')}${fld('Costo total (₡)','costo','text','',mon)}</div>
+  ${fld('Próxima revisión (opcional)','proxima','date','')}${fld('Notas','notas')}`,o=>{
+    const an=o._all.getAll('an');if(!an.length)return 'Escogé al menos un animal';
+    const r={id:uid(),fecha:o.fecha,tipo:o.tipo,producto:o.producto.trim(),motivo:o.motivo.trim(),dosis:dec(o.dosis),costo:n(o.costo),proxima:o.proxima||'',hecha:false,notas:o.notas,animales:an};
+    D.aplicaciones.push(r);if(r.proxima)after=()=>fAlarma(r);
   });
   if(!aid)f.dataset.redraw='checks';
 }
+const apHato=r=>hato(animal(r.animales[0])?.hato);
+const apTit=r=>r.tipo+(r.producto?': '+r.producto:'');
+function gcal(r){
+  const h=apHato(r),d=r.proxima.replace(/-/g,'');
+  const ar=r.animales.map(x=>animal(x)?.arete).filter(Boolean).join(', ');
+  const q=new URLSearchParams({action:'TEMPLATE',text:'Revisión ganado: '+(h?h.nombre:'')+' ('+(h?finca(h.finca).nombre:'')+')',dates:d+'T070000/'+d+'T073000',ctz:'America/Costa_Rica',details:'Anterior: '+apTit(r)+' ('+fec(r.fecha)+').'+(r.motivo?' Motivo: '+r.motivo+'.':'')+' Aretes: '+ar+'. Anotado en la app de campo.'});
+  return 'https://calendar.google.com/calendar/render?'+q.toString();
+}
+function fAlarma(r){
+  box.innerHTML=`<div class="sheet"><form><h3>Próxima revisión</h3><p><b>${fec(r.proxima)}</b> · ${esc(apHato(r)?.nombre||'')}</p><p class="note">Se abre Google Calendar con el evento ya escrito para las 7:00 a. m. Revisá que tenga la notificación activada y tocá <b>Guardar</b>.</p><div class="end"><button type="button" class="btn ghost" data-close>Ahora no</button><a class="btn b-oli" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="${gcal(r)}" target="_blank" rel="noopener" data-close>Poner alarma</a></div></form></div>`;
+  box.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>box.innerHTML='',50)));
+}
 function fGasto(hid){
   const ho=hatosAbiertos();if(!ho.length)return alertSheet('Primero creá un hato en una finca.');
-  sheet('Gasto general',`${sel('Hato','hato',ho,hid||ho[0][0])}<div class="two">${fld('Fecha','fecha','date',today())}${sel('Tipo','tipo',[['Transporte','Transporte'],['Alimentación','Alimentación'],['Otro','Otro']],'Transporte')}</div>${fld('Monto (₡) *','monto','text','',mon)}${fld('Notas','notas')}`,o=>{
-    if(!n(o.monto))return 'Falta el monto';D.gastos.push({id:uid(),hato:o.hato,fecha:o.fecha,tipo:o.tipo,monto:n(o.monto),notas:o.notas});
+  const f=sheet('Gasto general',`${sel('Hato','hato',ho,hid||ho[0][0])}<div class="two">${fld('Fecha','fecha','date',today())}${sel('Tipo','tipo',[['Alimentación','Alimentación'],['Sal/Minerales','Sal/Minerales'],['Transporte','Transporte'],['Otro','Otro']],'Alimentación')}</div>
+  ${fld('Detalle','notas','text','','placeholder="Ej.: sacos de concentrado"')}
+  <div class="two">${fld('Cantidad','cantidad','text','','inputmode="decimal" autocomplete="off"')}${fld('Precio unitario (₡)','unitario','text','',mon)}</div>
+  ${fld('Total (₡) *','monto','text','',mon)}<p class="note">Si ponés cantidad y precio unitario, el total se calcula solo.</p>`,o=>{
+    const c=dec(o.cantidad),u=n(o.unitario),t=n(o.monto)||Math.round(c*u);
+    if(!t)return 'Falta el total';D.gastos.push({id:uid(),hato:o.hato,fecha:o.fecha,tipo:o.tipo,cantidad:c,unitario:u,monto:t,notas:o.notas});
   });
+  f.addEventListener('input',e=>{if(e.target.name==='cantidad'||e.target.name==='unitario'){const c=dec(f.cantidad.value),u=n(f.unitario.value);if(c&&u)f.monto.value=miles(Math.round(c*u))}});
 }
 function fVenta(aid){
   const act=D.animales.filter(a=>a.estado==='activo');if(!act.length)return alertSheet('No hay animales activos.');
@@ -361,6 +389,83 @@ function fCerrar(hid){
 }
 function alertSheet(t){box.innerHTML=`<div class="sheet"><form><h3>Aviso</h3><p>${esc(t)}</p><div class="end"><button type="button" class="btn b-oli" data-close>Entendido</button></div></form></div>`;box.querySelector('[data-close]').onclick=()=>box.innerHTML=''}
 
+
+/* ---------- Excel (xlsx hecho a mano, sin internet) ---------- */
+const XE=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
+const colL=i=>{let s='';i++;while(i){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=(i-m-1)/26}return s};
+const serial=d=>{const[y,m,dd]=d.split('-').map(Number);return (Date.UTC(y,m-1,dd)-Date.UTC(1899,11,30))/86400000};
+/* estilos: 0 normal, 1 encabezado, 2 colones, 3 fecha, 4 título, 5 colones negrita, 6 negrita, 7 número */
+function hojaXML(sh){
+  const rows=sh.rows.map((r,ri)=>`<row r="${ri+1}">${r.map((c,ci)=>{
+    if(c===null||c===undefined||c==='')return '';
+    const ref=colL(ci)+(ri+1);let v=c,st=0;
+    if(typeof c==='object'){v=c.v;st=c.s||0;if(c.d!==undefined){if(!c.d)return '';v=serial(c.d);st=3}if(c.m!==undefined){v=c.m;st=c.b?5:2}}
+    if(v===null||v===undefined||v==='')return '';
+    if(typeof v==='number')return `<c r="${ref}" s="${st}"><v>${v}</v></c>`;
+    return `<c r="${ref}" s="${st}" t="inlineStr"><is><t xml:space="preserve">${XE(v)}</t></is></c>`;
+  }).join('')}</row>`).join('');
+    const pane=sh.head?`<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>`:'<sheetViews><sheetView workbookViewId="0"/></sheetViews>';
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${pane}<cols>${sh.cols.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rows}</sheetData></worksheet>`;
+}
+const STYLES=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/></numFmts><fonts count="4"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="15"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF5F6E34"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="8"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="3" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+const CRC=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[i]=c>>>0}return b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=t[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}})();
+function zip(files){
+  const enc=new TextEncoder(),parts=[],cen=[];let off=0;const dosD=((2026-1980)<<9)|(1<<5)|1;
+  for(const f of files){
+    const name=enc.encode(f.name),data=enc.encode(f.data),crc=CRC(data);
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,0,true);h.setUint16(12,dosD,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),name,data);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,0,true);c.setUint16(14,dosD,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+    cen.push(new Uint8Array(c.buffer),name);off+=30+name.length+data.length;
+  }
+  const cs=cen.reduce((s,x)=>s+x.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function xlsx(sheets){
+  const ov='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const files=[
+    {name:'[Content_Types].xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`},
+    {name:'_rels/.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${ov}/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+    {name:'xl/workbook.xml',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="${ov}"><sheets>${sheets.map((sh,i)=>`<sheet name="${XE(sh.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`},
+    {name:'xl/_rels/workbook.xml.rels',data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="${ov}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="${ov}/styles" Target="styles.xml"/></Relationships>`},
+    {name:'xl/styles.xml',data:STYLES},
+    ...sheets.map((sh,i)=>({name:`xl/worksheets/sheet${i+1}.xml`,data:hojaXML(sh)}))
+  ];
+  return zip(files);
+}
+function libroHato(hid){
+  const h=hato(hid),f=finca(h.finca),c=cuentas(hid),an=c.an,ids=an.map(a=>a.id);
+  const H=t=>({v:t,s:1}),B=t=>({v:t,s:6}),M=(m,b)=>({m:Math.round(m||0),b}),Dt=d=>({d:d||''});
+  const cuenta=(a)=>{const v=venta(a.id),san=Math.round(sanidadDe(a.id)),net=v&&v.tipo==='Venta'?(v.precio||0)-(v.rebajo||0):0;return{v,san,net}};
+  const res=[[{v:h.nombre+' · '+f.nombre,s:4}],[],[B('Finca'),f.nombre],[B('Hato'),h.nombre],[B('Fecha de inicio'),Dt(h.inicio)],[B('Estado'),h.estado==='cerrado'?'Cerrado':'Abierto'],[B('Fecha de cierre'),Dt(h.cierre)],
+    [B('Animales'),an.length],[B('Activos'),an.filter(a=>a.estado==='activo').length],[B('Vendidos'),an.filter(a=>a.estado==='vendido').length],[B('Muertos'),an.filter(a=>a.estado==='muerto').length],[],
+    [H('Cuentas'),H('Monto (₡)')],['Compra de animales',M(c.compra)],['Sanidad',M(c.san)],['Alimentación',M(c.ali)],['Transporte',M(c.tra)],['Otros (incluye sal/minerales)',M(c.otr)],[B('Total gastado'),M(c.inv,1)],['Vendido (neto)',M(c.ven)],[B(h.estado==='cerrado'?'Ganancia':'Resultado hasta hoy'),M(c.res,1)],[],
+    ['Sacado de la app el',Dt(today())]];
+  const ani=[['Arete','Color o señas','Fecha entrada','Peso estimado (kg)','Costo compra (₡)','Sanidad (₡)','Estado','Fecha salida','Peso subasta (kg)','Precio venta (₡)','Rebajo (₡)','Venta neta (₡)','Resultado animal (₡)','Comprado a','Sexo','Raza','Valor estimado (₡)'].map(H),
+    ...an.map(a=>{const{v,san,net}=cuenta(a);return[a.arete,a.senas||'',Dt(a.entrada),a.peso||'',M(a.costo),M(san),a.estado==='activo'?'En finca':a.estado==='vendido'?'Vendido':'Muerto',Dt(v?.fecha),v?.peso||'',v&&v.tipo==='Venta'?M(v.precio):'',v&&v.rebajo?M(v.rebajo):'',v&&v.tipo==='Venta'?M(net):'',v?M(net-(a.costo||0)-san):'',a.proveedor||'',a.sexo||'',a.raza||'',a.valor?M(a.valor):'']}),
+    ...(an.length?[[B('Totales'),'','',an.reduce((s,a)=>s+(a.peso||0),0)||'',M(c.compra,1),M(c.san,1),'','','','','',M(c.ven,1)]]:[])];
+  const aps=D.aplicaciones.filter(r=>r.animales.some(x=>ids.includes(x))).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const sal=[['Fecha','Qué se hizo','Producto','Plaga o motivo','Dosis por animal (ml)','Animales','Aretes','Costo para este hato (₡)','Próxima revisión','Notas'].map(H),
+    ...aps.map(r=>{const mine=r.animales.filter(x=>ids.includes(x));return[Dt(r.fecha),r.tipo,r.producto||'',r.motivo||'',r.dosis||'',mine.length,mine.map(x=>animal(x).arete).join(', '),M(r.costo*mine.length/r.animales.length),Dt(r.proxima),r.notas||'']})];
+  const gs=D.gastos.filter(g=>g.hato===hid).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const cos=[['Fecha','Tipo de gasto','Detalle','Cantidad','Precio unitario (₡)','Total (₡)'].map(H),...gs.map(g=>[Dt(g.fecha),g.tipo,g.notas||'',g.cantidad||'',g.unitario?M(g.unitario):'',M(g.monto)]),...(gs.length?[[B('Total'),'','','','',M(c.gas,1)]]:[])];
+  const vs=D.ventas.filter(v=>ids.includes(v.animal)).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const ven=[['Fecha','Arete','Tipo','Peso subasta (kg)','Precio (₡)','Rebajo (₡)','Neto (₡)','Subasta, comprador o causa'].map(H),...vs.map(v=>[Dt(v.fecha),animal(v.animal).arete,v.tipo,v.peso||'',v.tipo==='Venta'?M(v.precio):'',v.rebajo?M(v.rebajo):'',v.tipo==='Venta'?M((v.precio||0)-(v.rebajo||0)):'',v.quien||''])];
+  const ts=D.traslados.filter(t=>ids.includes(t.animal)||t.de===hid||t.a===hid);
+  const tra=[['Fecha','Arete','Desde','Hacia'].map(H),...ts.map(t=>[Dt(t.fecha),animal(t.animal)?.arete||'',(hato(t.de)?.nombre||'')+' · '+(finca(hato(t.de)?.finca)?.nombre||''),(hato(t.a)?.nombre||'')+' · '+(finca(hato(t.a)?.finca)?.nombre||'')])];
+  return [{name:'Resumen',cols:[32,18],rows:res},{name:'Animales',head:1,cols:[12,18,13,12,15,13,11,13,12,15,12,15,16,18,10,12,15],rows:ani},{name:'Salud',head:1,cols:[12,18,20,18,12,10,28,16,15,24],rows:sal},{name:'Costos',head:1,cols:[12,16,28,10,16,14],rows:cos},{name:'Ventas',head:1,cols:[12,12,10,12,14,12,14,28],rows:ven},{name:'Traslados',head:1,cols:[12,12,30,30],rows:tra}];
+}
+function fExcel(hid){
+  const h=hato(hid),f=finca(h.finca);
+  const nom=(h.nombre+' - '+f.nombre+' - '+today()).replace(/[\\/:*?"<>|]/g,'-')+'.xlsx';
+  const blob=xlsx(libroHato(hid));const file=new File([blob],nom,{type:blob.type});
+  const share=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  box.innerHTML=`<div class="sheet"><form><h3>Excel listo</h3><p><b>${esc(nom)}</b></p><p class="note">${share?'<b>Compartir</b> te deja mandarlo a Drive, WhatsApp o donde querás. ':''}<b>Guardar en el teléfono</b> lo deja en la carpeta Descargas.</p><div class="list"><button type="button" class="btn b-oli" id="xdl">Guardar en el teléfono</button>${share?'<button type="button" class="btn b-ocr" id="xsh">Compartir (Drive, WhatsApp…)</button>':''}<button type="button" class="btn ghost" data-close>Cerrar</button></div></form></div>`;
+  box.querySelector('[data-close]').onclick=()=>box.innerHTML='';
+  box.querySelector('#xdl').onclick=()=>{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000)};
+  box.querySelector('#xsh')?.addEventListener('click',()=>navigator.share({files:[file],title:nom}).catch(()=>{}));
+}
+
 function shrink(file){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};im.src=fr.result};fr.readAsDataURL(file)})}
 
 document.addEventListener('click',e=>{
@@ -368,7 +473,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return}
   const a=e.target.closest('[data-act]');if(!a)return;
   const[k,p]=a.dataset.act.split(':');
-  ({animal:()=>fAnimal(p),aplic:()=>fAplic(p),aplic1:()=>fAplic(null,p),gasto:()=>fGasto(p),venta:()=>fVenta(p),tras:()=>fTras(p),valor:()=>fValor(p),hato:()=>fHato(p),delFinca:()=>fDelFinca(p),renFinca:()=>fRen(p),cerrar:()=>fCerrar(p),
+  ({animal:()=>fAnimal(p),aplic:()=>fAplic(p),aplic1:()=>fAplic(null,p),editar:()=>fAnimal(null,p),hecha:()=>{const r=D.aplicaciones.find(x=>x.id===p);if(r){r.hecha=true;save();render()}},xls:()=>fExcel(p),gasto:()=>fGasto(p),venta:()=>fVenta(p),tras:()=>fTras(p),valor:()=>fValor(p),hato:()=>fHato(p),delFinca:()=>fDelFinca(p),renFinca:()=>fRen(p),cerrar:()=>fCerrar(p),
     addFinca:()=>{let i=D.fincas.length+1;while(D.fincas.some(f=>f.nombre==='Finca '+i))i++;D.fincas.push({id:uid(),nombre:'Finca '+i});save();render()}})[k]?.();
 });
 document.addEventListener('input',e=>{if(e.target.dataset?.mon){const el=e.target,before=el.value.slice(0,el.selectionStart).replace(/\D/g,'').length;el.value=miles(el.value);let p=0,k=0;while(p<el.value.length&&k<before){if(/\d/.test(el.value[p]))k++;p++}try{el.setSelectionRange(p,p)}catch(_){}return}if(e.target.id==='q'){q=e.target.value.trim();document.getElementById('res').innerHTML=resHTML()}});
