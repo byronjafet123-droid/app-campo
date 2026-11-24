@@ -1,6 +1,6 @@
 // App de campo · guarda una copia del programa para que abra aunque no haya señal.
 // Los datos NO pasan por aquí: viven en el teléfono (IndexedDB).
-const CACHE = 'app-campo-v7';
+const CACHE = 'app-campo-v8';
 const BASE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).then(() => self.skipWaiting()));

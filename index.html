@@ -104,6 +104,8 @@ nav button.on{color:var(--ink);box-shadow:inset 0 4px 0 var(--ocr)}
 .empty{padding:18px;text-align:center;color:var(--soft);border:2px dashed var(--line);border-radius:14px}
 .res a,.res button{text-decoration:none}
 .hidden{display:none}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:40;background:var(--oli);color:#fff;font-weight:800;padding:12px 22px;border-radius:999px;box-shadow:0 4px 18px rgba(0,0,0,.4)}
+.upd{position:fixed;left:12px;right:12px;top:10px;z-index:45;min-height:48px;border:0;border-radius:12px;background:var(--ocr);color:#fff;font-weight:800;font-size:16px}
 @media(min-width:600px){.herd{grid-template-columns:repeat(3,minmax(0,1fr))}.quick{grid-template-columns:repeat(4,minmax(0,1fr))}.sheet{align-items:center}.sheet form{border-radius:18px;border-bottom:2px solid var(--line)}}
 @media(min-width:900px){
 .app{grid-template-columns:230px minmax(0,1fr);grid-template-rows:auto 1fr}
@@ -148,8 +150,9 @@ const calf=`<svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice"><rec
 
 const vacio=()=>({fincas:[{id:'f1',nombre:'Finca 1'},{id:'f2',nombre:'Finca 2'}],hatos:[],animales:[],aplicaciones:[],gastos:[],traslados:[],ventas:[],sol:false,respaldo:''});
 const idb=new Promise((res,rej)=>{const r=indexedDB.open('ganaderia',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const idbDel=k=>idb.then(db=>new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').delete(k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)}));
 const idbGet=k=>idb.then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
-const idbSet=(k,v)=>idb.then(db=>new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)}));
+const idbSet=(k,v)=>idb.then(db=>new Promise((res,rej)=>{let t;try{t=db.transaction('kv','readwrite',{durability:'strict'})}catch(_){t=db.transaction('kv','readwrite')}t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)}));
 let D=null,saving=Promise.resolve(),persistente=false;
 const save=()=>{saving=saving.then(()=>idbSet('datos',D)).catch(()=>alertSheet('No se pudo guardar el último cambio. Revisá que el teléfono tenga espacio libre y volvé a intentarlo.'))};
 
@@ -257,7 +260,7 @@ mas(){
   ${D.fincas.map(f=>{const hs=hatosDe(f.id);return hs.length?`<h2 style="font-size:19px;margin:16px 0 8px">${esc(f.nombre)}</h2><div class="list">${hs.map(h=>`<button class="row" data-act="xls:${h.id}"><div class="g"><div class="big" style="font-size:20px">${esc(h.nombre)}</div><div class="sm">${h.estado==='cerrado'?'Cerrado el '+fec(h.cierre):'Abierto'} · ${animalesDe(h.id).length} animales</div></div><span class="chip v">Excel</span></button>`).join('')}</div>`:''}).join('')||'<div class="empty">Todavía no hay hatos</div>'}</div>
   <div class="card"><h2 style="margin-top:0">Respaldar</h2><p class="note">Crea un archivo con todo, fotos incluidas. Guardalo en tu Drive más o menos una vez al mes. Último respaldo: <b>${D.respaldo?fec(D.respaldo):'todavía no se ha hecho'}</b>.</p><button class="btn b-ocr" data-act="respaldar">Respaldar ahora</button></div>
   <div class="card"><h2 style="margin-top:0">Recuperar un respaldo</h2><p class="note">Carga un archivo de respaldo en este aparato. Sirve si cambiás de teléfono o para ver todo en la computadora. <b>Reemplaza</b> lo que haya en este aparato.</p><label class="btn ghost" style="display:inline-flex;align-items:center;cursor:pointer" for="rec">Escoger archivo de respaldo</label><input id="rec" class="hidden" type="file" accept=".json,.txt,application/json,text/plain"></div>
-  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este aparato, apenas tocás Guardar. No se suben a internet. ${persistente?'Este aparato los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 5.3</p></div></div>`;
+  <div class="card"><h2 style="margin-top:0">Dónde están tus datos</h2><p class="note">Se guardan solo en este aparato, apenas tocás Guardar. No se suben a internet. ${persistente?'Este aparato los tiene marcados para no borrarlos solo.':'Para protegerlos mejor, instalá la app en la pantalla de inicio.'}</p><p class="note">${D.animales.length} animales · ${D.hatos.length} hatos · ${D.fincas.length} fincas</p><p class="note">Versión de la app: 6</p></div></div>`;
 }};
 const titles={inicio:'Inicio',fincas:'Fincas',finca:'Finca',hato:'Hato',animal:'Animal',mas:'Exportar',hist:'Histórico'};
 
@@ -280,14 +283,18 @@ const fld=(l,n,t='text',v='',x='')=>`<div class="f"><label for="i-${n}">${l}</la
 const sel=(l,n,o,v,x='')=>`<div class="f"><label for="i-${n}">${l}</label><select id="i-${n}" name="${n}" ${x}>${opts(o,v)}</select></div>`;
 const num='inputmode="numeric" type="text"';
 const mon='inputmode="numeric" data-mon="1" autocomplete="off"';
-let after=null;
+let after=null,actual=null,borrT=0;
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
+function campos(f){const o={};for(const el of f.elements){if(!el.name||el.type==='file'||el.type==='hidden'&&el.name==='an')continue;if(el.name==='fotoData'&&!el.value)continue;if(el.type==='checkbox'){(o['__'+el.name]=o['__'+el.name]||[]);if(el.checked)o['__'+el.name].push(el.value)}else o[el.name]=el.value}return o}
+function guardarBorrador(f,ya){clearTimeout(borrT);const go=()=>{if(!actual||!f.isConnected)return;idbSet('borrador',{act:actual,titulo:f.querySelector('h3').textContent,campos:campos(f),hora:Date.now()}).catch(()=>{})};ya?go():borrT=setTimeout(go,300)}
+function cerrarSheet(){clearTimeout(borrT);box.innerHTML='';actual=null;idbDel('borrador').catch(()=>{})}
 function sheet(title,html,onSave,label='Guardar'){
   box.innerHTML=`<div class="sheet"><form novalidate><h3>${title}</h3>${html}<div class="err" id="err"></div><div class="end"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn b-oli">${label}</button></div></form></div>`;
   const f=box.querySelector('form');
-  f.onsubmit=e=>{e.preventDefault();const o=Object.fromEntries(new FormData(f));o._all=new FormData(f);const er=onSave(o,f);if(er){f.querySelector('#err').textContent=er;return}save();box.innerHTML='';render();if(after){const g=after;after=null;g()}};
-  box.querySelector('[data-close]').onclick=()=>box.innerHTML='';
-  box.querySelector('.sheet').onclick=e=>{if(e.target.classList.contains('sheet'))box.innerHTML=''};
-  f.onchange=e=>{if(e.target.name==='hato'&&f.dataset.redraw)f.dataset.redraw&&redraw[f.dataset.redraw]?.(f)};
+  f.onsubmit=e=>{e.preventDefault();const o=Object.fromEntries(new FormData(f));o._all=new FormData(f);const er=onSave(o,f);if(er){const el=f.querySelector('#err');el.textContent=er;el.scrollIntoView({block:'center',behavior:'smooth'});return}save();cerrarSheet();render();toast('Guardado ✓');if(after){const g=after;after=null;g()}};
+  box.querySelector('[data-close]').onclick=cerrarSheet;
+  f.onchange=e=>{if(e.target.name==='hato'&&f.dataset.redraw)redraw[f.dataset.redraw]?.(f);if(actual)guardarBorrador(f)};
+  f.addEventListener('input',()=>{if(actual)guardarBorrador(f)});
   return f;
 }
 const n=v=>+(String(v||'').replace(/\D/g,''))||0;
@@ -304,12 +311,13 @@ function fAnimal(hid,eid){
   <div class="two">${fld('Fecha de entrada','entrada','date',e?.entrada||today())}${fld('Costo de compra (₡)','costo','text',e?.costo?miles(e.costo):'',mon)}</div>
   <div class="two">${fld('Peso estimado (kg)','peso','text',e?.peso||'',num)}${sel('Sexo','sexo',[['',''],['Macho','Macho'],['Hembra','Hembra']],e?.sexo||'')}</div>
   <div class="two">${fld('Raza','raza','text',e?.raza||'')}${fld('Comprado a','proveedor','text',e?.proveedor||'')}</div>
-  <div class="f"><label for="i-foto">${e?.foto?'Cambiar foto (opcional)':'Foto (opcional)'}</label><input id="i-foto" name="foto" type="file" accept="image/*"></div>`,(o,f)=>{
+  <div class="f"><label for="i-foto">${e?.foto?'Cambiar foto (opcional)':'Foto (opcional)'}</label><input id="i-foto" name="foto" type="file" accept="image/*" data-shrink="1"><input type="hidden" name="fotoData" value=""><div class="note" id="fotoOk"></div></div>`,(o,f)=>{
+    if(f.dataset.cargando)return 'Esperá un momento, la foto se está preparando';
     const ar=o.arete.trim();if(!ar)return 'Falta el arete (número o nombre)';
     if(D.animales.some(x=>x.arete.toLowerCase()===ar.toLowerCase()&&x!==e))return 'Ya existe un animal con el arete '+ar;
     const a=e||{id:uid(),hato:o.hato,foto:'',estado:'activo',valor:0};
     Object.assign(a,{arete:ar,senas:o.senas.trim(),entrada:o.entrada,costo:n(o.costo),peso:n(o.peso),proveedor:o.proveedor,sexo:o.sexo,raza:o.raza});
-    if(!e)D.animales.push(a);const file=f.foto.files[0];if(file)shrink(file).then(u=>{a.foto=u;save();render()});
+    if(o.fotoData)a.foto=o.fotoData;if(!e)D.animales.push(a);
   });
 }
 const TIPOS_SALUD=['Revisión general','Vacuna','Desparasitante','Baño contra plagas','Vitamina','Antibiótico','Medicamento','Otro'].map(x=>[x,x]);
@@ -390,7 +398,7 @@ function fCerrar(hid){
   const c=cuentas(hid);
   sheet('Cerrar '+esc(hato(hid).nombre),`<dl class="dl"><dt>Ventas</dt><dd class="money">${col(c.ven)}</dd><dt>Compra</dt><dd class="money">−${col(c.compra)}</dd><dt>Sanidad</dt><dd class="money">−${col(c.san)}</dd><dt>Gastos generales</dt><dd class="money">−${col(c.gas)}</dd><dt>Ganancia</dt><dd class="money ${c.res>=0?'pos':'neg'}" style="font-size:24px">${c.res<0?'−':''}${col(Math.abs(c.res))}</dd></dl>${c.activos?`<p class="err">Ojo: todavía hay ${c.activos} animal${c.activos>1?'es':''} activo${c.activos>1?'s':''} en este hato.</p>`:''}${fld('Fecha de cierre','cierre','date',today())}`,o=>{const h=hato(hid);h.estado='cerrado';h.cierre=o.cierre},'Cerrar hato');
 }
-function alertSheet(t){box.innerHTML=`<div class="sheet"><form><h3>Aviso</h3><p>${esc(t)}</p><div class="end"><button type="button" class="btn b-oli" data-close>Entendido</button></div></form></div>`;box.querySelector('[data-close]').onclick=()=>box.innerHTML=''}
+function alertSheet(t){actual=null;box.innerHTML=`<div class="sheet"><form><h3>Aviso</h3><p>${esc(t)}</p><div class="end"><button type="button" class="btn b-oli" data-close>Entendido</button></div></form></div>`;box.querySelector('[data-close]').onclick=()=>box.innerHTML=''}
 
 
 /* ---------- Excel (xlsx hecho a mano, sin internet) ---------- */
@@ -486,7 +494,7 @@ function fRespaldar(){
   box.querySelector('#rdl').onclick=()=>{const u=URL.createObjectURL(file);const a=document.createElement('a');a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);box.innerHTML='';marca()};
   box.querySelector('#rsh')?.addEventListener('click',()=>navigator.share({files:[file],title:file.name}).then(()=>{box.innerHTML='';marca()}).catch(e=>{if(e&&e.name!=='AbortError')box.querySelector('.note').innerHTML='No se pudo abrir el menú de compartir. Usá <b>Guardar en este aparato</b> y subilo a Drive después.'}));
 }
-function fRecuperar(file){
+function fRecuperar(file){actual=null;
   const fr=new FileReader();
   fr.onload=()=>{
     let r=null;try{r=JSON.parse(fr.result)}catch(e){}
@@ -503,25 +511,40 @@ function fRecuperar(file){
 
 function shrink(file){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};im.src=fr.result};fr.readAsDataURL(file)})}
 
+const FORMS=['animal','aplic','aplic1','editar','gasto','venta','tras','valor','hato','renFinca'];
+const ACTS={animal:p=>fAnimal(p),aplic:p=>fAplic(p),aplic1:p=>fAplic(null,p),editar:p=>fAnimal(null,p),gasto:p=>fGasto(p),venta:p=>fVenta(p),tras:p=>fTras(p),valor:p=>fValor(p),hato:p=>fHato(p),renFinca:p=>fRen(p)};
+function retomar(b){
+  const t=Math.round((Date.now()-b.hora)/60000);
+  box.innerHTML=`<div class="sheet"><form><h3>Tenés algo sin terminar</h3><p><b>${esc(b.titulo)}</b> · ${t<1?'hace un momento':t<60?'hace '+t+' min':'hace '+Math.round(t/60)+' h'}</p><p class="note">Lo que escribiste quedó guardado como borrador. ¿Seguimos donde ibas?</p><div class="end"><button type="button" class="btn ghost" id="bdes">Descartar</button><button type="button" class="btn b-oli" id="bsig">Seguir</button></div></form></div>`;
+  box.querySelector('#bdes').onclick=cerrarSheet;
+  box.querySelector('#bsig').onclick=()=>{box.innerHTML='';actual=b.act;try{ACTS[b.act.k](b.act.p)}catch(e){}const f=box.querySelector('form');if(!f||!actual)return cerrarSheet();
+    if(f.hato&&b.campos.hato){f.hato.value=b.campos.hato;if(f.dataset.redraw)redraw[f.dataset.redraw]?.(f)}
+    for(const[k,v]of Object.entries(b.campos)){if(k.startsWith('__')){f.querySelectorAll(`input[name="${k.slice(2)}"]`).forEach(c=>c.checked=v.includes(c.value))}else if(f.elements[k]&&k!=='hato')f.elements[k].value=v}
+    if(b.campos.fotoData)f.querySelector('#fotoOk').textContent='Foto lista ✓';
+  };
+}
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g){const[v,p]=g.dataset.go.split(':');go(v,p);return}
   const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return}
   const a=e.target.closest('[data-act]');if(!a)return;
-  const[k,p]=a.dataset.act.split(':');
+  const[k,p]=a.dataset.act.split(':');actual=FORMS.includes(k)?{k,p:p||null}:null;
   ({animal:()=>fAnimal(p),aplic:()=>fAplic(p),aplic1:()=>fAplic(null,p),editar:()=>fAnimal(null,p),hecha:()=>{const r=D.aplicaciones.find(x=>x.id===p);if(r){r.hecha=true;save();render()}},xls:()=>fExcel(p),respaldar:fRespaldar,gasto:()=>fGasto(p),venta:()=>fVenta(p),tras:()=>fTras(p),valor:()=>fValor(p),hato:()=>fHato(p),delFinca:()=>fDelFinca(p),renFinca:()=>fRen(p),cerrar:()=>fCerrar(p),
     addFinca:()=>{let i=D.fincas.length+1;while(D.fincas.some(f=>f.nombre==='Finca '+i))i++;D.fincas.push({id:uid(),nombre:'Finca '+i});save();render()}})[k]?.();
 });
 document.addEventListener('input',e=>{if(e.target.dataset?.mon){const el=e.target,before=el.value.slice(0,el.selectionStart).replace(/\D/g,'').length;el.value=miles(el.value);let p=0,k=0;while(p<el.value.length&&k<before){if(/\d/.test(el.value[p]))k++;p++}try{el.setSelectionRange(p,p)}catch(_){}return}if(e.target.id==='q'){q=e.target.value.trim();document.getElementById('res').innerHTML=resHTML()}});
-document.addEventListener('change',e=>{if(e.target.id==='rec'){const f=e.target.files[0];e.target.value='';if(f)fRecuperar(f);return}const id=e.target.dataset?.foto;if(id&&e.target.files[0])shrink(e.target.files[0]).then(u=>{animal(id).foto=u;save();render()})});
+document.addEventListener('change',e=>{if(e.target.dataset?.shrink&&e.target.files[0]){const f=e.target.form;f.dataset.cargando='1';f.querySelector('#fotoOk').textContent='Preparando foto…';shrink(e.target.files[0]).then(u=>{f.fotoData.value=u;delete f.dataset.cargando;f.querySelector('#fotoOk').textContent='Foto lista ✓';if(actual)guardarBorrador(f,1)});return}if(e.target.id==='rec'){const f=e.target.files[0];e.target.value='';if(f)fRecuperar(f);return}const id=e.target.dataset?.foto;if(id&&e.target.files[0])shrink(e.target.files[0]).then(u=>{animal(id).foto=u;save();render()})});
 document.getElementById('back').onclick=()=>{cur=stack.pop()||{v:'inicio',p:null};render();scrollTo(0,0)};
 document.getElementById('sol').onclick=()=>{D.sol=!D.sol;save();render()};
 (async()=>{
   try{D=await idbGet('datos')}catch(e){}
+  let bor=null;try{bor=await idbGet('borrador')}catch(e){}
   if(!D||!D.fincas){D=vacio();save()}
   try{persistente=await navigator.storage?.persist?.()||await navigator.storage?.persisted?.()||false}catch(e){}
   render();
+  if(bor&&bor.act&&ACTS[bor.act.k])retomar(bor);
 })();
-if('serviceWorker' in navigator){const habia=!!navigator.serviceWorker.controller;let ya=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(habia&&!ya){ya=true;location.reload()}});addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}))}
+addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){const f=box.querySelector('form');if(f&&actual)guardarBorrador(f,1)}});
+if('serviceWorker' in navigator){const habia=!!navigator.serviceWorker.controller;let ya=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!habia||ya)return;ya=true;if(!box.innerHTML){location.reload();return}const d=document.createElement('button');d.className='upd';d.textContent='Hay una versión nueva · tocá aquí cuando termines';d.onclick=()=>{if(box.querySelector('form')&&actual)guardarBorrador(box.querySelector('form'),1);setTimeout(()=>location.reload(),150)};document.body.appendChild(d)});addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}))}
 }
 </script>
 </body>
